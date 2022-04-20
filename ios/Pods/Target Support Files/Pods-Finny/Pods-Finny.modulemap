@@ -1,0 +1,6 @@
+module Pods_Finny {
+  umbrella header "Pods-Finny-umbrella.h"
+
+  export *
+  module * { export * }
+}
