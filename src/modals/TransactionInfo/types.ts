@@ -6,7 +6,7 @@ export type TransactionInfoProps = {
 };
 
 export type TransactionInfoType = {
-  amount: number;
-  category: string;
-  icon: string;
+  amount?: number;
+  category?: string;
+  icon?: string;
 };

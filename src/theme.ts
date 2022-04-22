@@ -6,7 +6,7 @@ export const DARK_THEME: Theme = {
   roundness: 2,
   colors: {
     ...DarkTheme.colors,
-    primary: '#004C4C',
+    primary: '#009688',
     accent: '#607D8B',
   },
 };

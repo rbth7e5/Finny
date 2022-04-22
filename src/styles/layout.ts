@@ -1,6 +1,6 @@
 import { ViewStyle } from 'react-native';
 
-export const padded = {
+export const padded: ViewStyle = {
   paddingHorizontal: 16,
 };
 
@@ -13,3 +13,7 @@ export const floating = (positioning: {
   position: 'absolute',
   ...positioning,
 });
+
+export const flushRight: ViewStyle = {
+  marginLeft: 'auto',
+};
