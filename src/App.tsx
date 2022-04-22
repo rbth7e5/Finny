@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, useColorScheme } from 'react-native';
 import {
   Provider as PaperProvider,
@@ -12,9 +12,14 @@ import Overview from './pages/Overview';
 import { DARK_THEME, LIGHT_THEME } from './theme';
 import { Tab } from './enums';
 import { Layout } from './styles';
+import TransactionInfo, {
+  TransactionInfoType,
+  DEFAULT_TRANSACTION_INFO,
+} from './modals/TransactionInfo';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
+
   const [tab, setTab] = useState<Tab>(Tab.Transactions);
   const routes = useMemo(
     () => [
@@ -28,6 +33,12 @@ const App = () => {
     overview: Overview,
   });
 
+  const [transactionInfo, setTransactionInfo] =
+    useState<TransactionInfoType | null>(null);
+  const addNewTransaction = useCallback(() => {
+    setTransactionInfo(DEFAULT_TRANSACTION_INFO);
+  }, []);
+
   return (
     <PaperProvider theme={isDarkMode ? DARK_THEME : LIGHT_THEME}>
       <BottomNavigation
@@ -35,7 +46,11 @@ const App = () => {
         onIndexChange={setTab}
         renderScene={renderScene}
       />
-      <FAB style={styles.fab} icon="plus" />
+      <FAB style={styles.fab} icon="plus" onPress={addNewTransaction} />
+      <TransactionInfo
+        transactionInfo={transactionInfo}
+        setTransactionInfo={setTransactionInfo}
+      />
     </PaperProvider>
   );
 };
