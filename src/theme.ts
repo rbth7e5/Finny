@@ -1,23 +1,24 @@
-import { DefaultTheme } from 'react-native-paper';
+import { DefaultTheme, DarkTheme } from 'react-native-paper';
+import { Theme } from 'react-native-paper/lib/typescript/types';
 
-export const DARK_THEME = {
-  ...DefaultTheme,
+export const DARK_THEME: Theme = {
+  ...DarkTheme,
   roundness: 2,
   colors: {
-    ...DefaultTheme.colors,
-    primary: '#1A1A1A',
-    accent: '#FAFAFA',
+    ...DarkTheme.colors,
+    primary: '#004C4C',
+    accent: '#607D8B',
     text: '#FAFAFA',
   },
 };
 
-export const LIGHT_THEME = {
+export const LIGHT_THEME: Theme = {
   ...DefaultTheme,
   roundness: 2,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#FAFAFA',
-    accent: '#1A1A1A',
-    text: '#1A1A1A',
+    primary: '#006666',
+    accent: '#607D8B',
+    text: '#212121',
   },
 };

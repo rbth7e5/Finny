@@ -1,29 +1,38 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  useColorScheme,
-  View,
-} from 'react-native';
-import { Provider as PaperProvider } from 'react-native-paper';
+  Provider as PaperProvider,
+  BottomNavigation,
+} from 'react-native-paper';
 
-import Text from './components/Text';
 import { DARK_THEME, LIGHT_THEME } from './theme';
+import Transactions from './Transactions';
+import Overview from './Overview';
+
+import { Tab } from './enums';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
+  const [tab, setTab] = useState<Tab>(Tab.Transactions);
+  const routes = useMemo(
+    () => [
+      { key: 'transactions', title: 'Transactions', icon: 'history' },
+      { key: 'overview', title: 'Overview', icon: 'album' },
+    ],
+    [],
+  );
+  const renderScene = BottomNavigation.SceneMap({
+    transactions: Transactions,
+    overview: Overview,
+  });
 
   return (
     <PaperProvider theme={isDarkMode ? DARK_THEME : LIGHT_THEME}>
-      <SafeAreaView>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-        <ScrollView contentInsetAdjustmentBehavior="automatic">
-          <View>
-            <Text>Hello, Welcome to Finny!</Text>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <BottomNavigation
+        navigationState={{ index: tab, routes }}
+        onIndexChange={setTab}
+        renderScene={renderScene}
+      />
     </PaperProvider>
   );
 };
