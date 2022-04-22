@@ -26,11 +26,11 @@ export const addTransaction = async (transaction: TransactionInfoType) => {
   }
 };
 
-export const getTransactions = async () => {
+export const getTransactions = async (): Promise<TransactionInfoType[]> => {
   try {
     const transactions = await AsyncStorage.getItem(TRANSACTION_STORAGE_KEY);
     if (transactions) {
-      return transactions;
+      return JSON.parse(transactions);
     }
     return [];
   } catch (error) {

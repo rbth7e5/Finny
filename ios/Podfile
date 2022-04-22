@@ -20,6 +20,8 @@ target 'Finny' do
   )
 
 
+
+
   pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
 
   target 'FinnyTests' do
