@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { StyleSheet, useColorScheme } from 'react-native';
 import {
   Provider as PaperProvider,
   BottomNavigation,
+  FAB,
 } from 'react-native-paper';
 
-import { DARK_THEME, LIGHT_THEME } from './theme';
 import Transactions from './pages/Transactions';
 import Overview from './pages/Overview';
 
+import { DARK_THEME, LIGHT_THEME } from './theme';
 import { Tab } from './enums';
+import { Layout } from './styles';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -33,8 +35,13 @@ const App = () => {
         onIndexChange={setTab}
         renderScene={renderScene}
       />
+      <FAB style={styles.fab} icon="plus" />
     </PaperProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  fab: Layout.floating({ bottom: 64, right: 16 }),
+});
 
 export default App;
