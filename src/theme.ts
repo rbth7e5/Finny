@@ -8,7 +8,6 @@ export const DARK_THEME: Theme = {
     ...DarkTheme.colors,
     primary: '#004C4C',
     accent: '#607D8B',
-    text: '#FAFAFA',
   },
 };
 
@@ -19,6 +18,5 @@ export const LIGHT_THEME: Theme = {
     ...DefaultTheme.colors,
     primary: '#006666',
     accent: '#607D8B',
-    text: '#212121',
   },
 };
