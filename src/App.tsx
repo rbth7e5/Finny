@@ -6,8 +6,8 @@ import {
 } from 'react-native-paper';
 
 import { DARK_THEME, LIGHT_THEME } from './theme';
-import Transactions from './Transactions';
-import Overview from './Overview';
+import Transactions from './pages/Transactions';
+import Overview from './pages/Overview';
 
 import { Tab } from './enums';
 

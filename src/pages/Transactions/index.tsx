@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text } from 'react-native-paper';
-import PageWrapper from './pages/PageWrapper';
+import PageWrapper from '../PageWrapper';
 import { View } from 'react-native';
 
 const Transactions = () => {
