@@ -9,7 +9,7 @@ import {
 import { Layout } from '../styles';
 
 type PageWrapperProps = {
-  children: React.ReactChild;
+  children: React.ReactNode;
 };
 
 const PageWrapper = ({ children }: PageWrapperProps) => {
