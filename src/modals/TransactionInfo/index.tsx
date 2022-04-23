@@ -12,7 +12,7 @@ const TransactionInfo = ({
   const [amount, setAmount] = useState<string | undefined>(
     transactionInfo?.amount ? String(transactionInfo?.amount) : undefined,
   );
-  const isAmountValid: Boolean = useMemo(
+  const isAmountValid: boolean = useMemo(
     () => Boolean(amount && !isNaN(+amount)),
     [amount],
   );
@@ -20,7 +20,7 @@ const TransactionInfo = ({
   const [category, setCategory] = useState<string | undefined>(
     transactionInfo?.category,
   );
-  const isCategoryValid: Boolean = useMemo(() => Boolean(category), [category]);
+  const isCategoryValid: boolean = useMemo(() => Boolean(category), [category]);
 
   const onDismiss = useCallback(
     () => setTransactionInfo(null),
