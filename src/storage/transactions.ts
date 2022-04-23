@@ -10,7 +10,7 @@ export const addTransaction = async (transaction: TransactionInfoType) => {
     );
     if (existingTransactionsRaw) {
       const existingTransactions = JSON.parse(existingTransactionsRaw);
-      const updatedTransactions = [transaction, existingTransactions];
+      const updatedTransactions = [transaction, ...existingTransactions];
       await AsyncStorage.setItem(
         TRANSACTION_STORAGE_KEY,
         JSON.stringify(updatedTransactions),
