@@ -1,7 +1,7 @@
-import { ViewStyle } from 'react-native';
+import { FlexAlignType, ViewStyle } from 'react-native';
 
 export const padded: ViewStyle = {
-  paddingHorizontal: 16,
+  padding: 16,
 };
 
 export const floating = (positioning: {
@@ -17,3 +17,39 @@ export const floating = (positioning: {
 export const flushRight: ViewStyle = {
   marginLeft: 'auto',
 };
+
+export const marginBottomSmall: ViewStyle = {
+  marginBottom: 8,
+};
+
+export const flexRow = (positioning: {
+  justifyContent:
+    | 'flex-start'
+    | 'flex-end'
+    | 'center'
+    | 'space-between'
+    | 'space-around'
+    | 'space-evenly'
+    | undefined;
+  alignItems: FlexAlignType;
+}): ViewStyle => ({
+  display: 'flex',
+  flexDirection: 'row',
+  ...positioning,
+});
+
+export const flexColumn = (positioning: {
+  justifyContent:
+    | 'flex-start'
+    | 'flex-end'
+    | 'center'
+    | 'space-between'
+    | 'space-around'
+    | 'space-evenly'
+    | undefined;
+  alignItems: FlexAlignType;
+}): ViewStyle => ({
+  display: 'flex',
+  flexDirection: 'column',
+  ...positioning,
+});

@@ -4,6 +4,7 @@ import { StyleSheet } from 'react-native';
 import { Layout } from '../../styles';
 import { TransactionInfoProps, TransactionInfoType } from './types';
 import { addTransaction } from '../../storage';
+import { generateDefaultTransaction } from './constants';
 
 const TransactionInfo = ({
   transactionInfo,
@@ -29,6 +30,7 @@ const TransactionInfo = ({
   const onAdd = useCallback(async () => {
     if (isAmountValid && isCategoryValid) {
       const newTransaction: TransactionInfoType = {
+        ...generateDefaultTransaction(),
         amount: +amount!,
         category,
       };

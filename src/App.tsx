@@ -14,7 +14,7 @@ import { Tab } from './enums';
 import { Layout } from './styles';
 import TransactionInfo, {
   TransactionInfoType,
-  DEFAULT_TRANSACTION_INFO,
+  generateDefaultTransaction,
 } from './modals/TransactionInfo';
 
 const App = () => {
@@ -36,7 +36,7 @@ const App = () => {
   const [transactionInfo, setTransactionInfo] =
     useState<TransactionInfoType | null>(null);
   const addNewTransaction = useCallback(() => {
-    setTransactionInfo(DEFAULT_TRANSACTION_INFO);
+    setTransactionInfo(generateDefaultTransaction());
   }, []);
 
   return (

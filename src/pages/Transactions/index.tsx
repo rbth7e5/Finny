@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Headline, List } from 'react-native-paper';
+import { List } from 'react-native-paper';
 import PageWrapper from '../PageWrapper';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { getTransactions } from '../../storage';
+import Transaction from './Transaction';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
@@ -15,12 +16,10 @@ const Transactions = () => {
   });
   return (
     <PageWrapper>
-      <Headline>Transactions</Headline>
-      {transactions.map(({ amount, category }, index) => (
-        <List.Item
-          key={`${index}${amount}${category}`}
-          title={`$${amount}`}
-          description={category}
+      {transactions.map(transactionInfo => (
+        <Transaction
+          key={transactionInfo.id}
+          transactionInfo={transactionInfo}
         />
       ))}
     </PageWrapper>
