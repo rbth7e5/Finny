@@ -35,7 +35,7 @@ const TransactionInfo = ({
       await addTransaction(newTransaction);
       setTransactionInfo(null);
     }
-  }, [amount, category, isAmountValid, setTransactionInfo]);
+  }, [amount, category, isAmountValid, isCategoryValid, setTransactionInfo]);
 
   return (
     <Portal>
