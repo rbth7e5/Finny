@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Surface, Title } from 'react-native-paper';
+import { Surface, Text } from 'react-native-paper';
 import moment from 'moment';
 import { Layout, Shapes } from '../../styles';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
@@ -14,9 +14,9 @@ const Transaction = ({
 }: TransactionProps) => {
   return (
     <Surface style={styles.container}>
-      <Title>${amount}</Title>
-      <Title>{category}</Title>
-      <Title>{moment(timestamp).format('h:mm A')}</Title>
+      <Text>${amount}</Text>
+      <Text>{category}</Text>
+      <Text>{moment(timestamp).format('h:mm A')}</Text>
     </Surface>
   );
 };
