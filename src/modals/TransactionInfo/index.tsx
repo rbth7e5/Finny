@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Button, Card, Modal, Portal, TextInput } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
 import { Layout } from '../../styles';
@@ -9,24 +9,34 @@ const TransactionInfo = ({
   transactionInfo,
   setTransactionInfo,
 }: TransactionInfoProps) => {
-  const [amount, setAmount] = useState<number | undefined>(
-    transactionInfo?.amount,
+  const [amount, setAmount] = useState<string | undefined>(
+    transactionInfo?.amount ? String(transactionInfo?.amount) : undefined,
   );
+  const isAmountValid: Boolean = useMemo(
+    () => Boolean(amount && !isNaN(+amount)),
+    [amount],
+  );
+
   const [category, setCategory] = useState<string | undefined>(
     transactionInfo?.category,
   );
+  const isCategoryValid: Boolean = useMemo(() => Boolean(category), [category]);
+
   const onDismiss = useCallback(
     () => setTransactionInfo(null),
     [setTransactionInfo],
   );
   const onAdd = useCallback(async () => {
-    const newTransaction: TransactionInfoType = {
-      amount,
-      category,
-    };
-    await addTransaction(newTransaction);
-    setTransactionInfo(null);
-  }, [amount, category, setTransactionInfo]);
+    if (isAmountValid && isCategoryValid) {
+      const newTransaction: TransactionInfoType = {
+        amount: +amount!,
+        category,
+      };
+      await addTransaction(newTransaction);
+      setTransactionInfo(null);
+    }
+  }, [amount, category, isAmountValid, setTransactionInfo]);
+
   return (
     <Portal>
       <Modal
@@ -41,18 +51,24 @@ const TransactionInfo = ({
             <TextInput
               label="Amount"
               keyboardType="numeric"
-              value={amount === undefined ? '' : String(amount)}
-              onChangeText={value => setAmount(+value)}
+              error={!isAmountValid}
+              value={amount}
+              onChangeText={value => setAmount(value)}
             />
             <TextInput
               label="Category"
+              error={!isCategoryValid}
               value={category}
               onChangeText={value => setCategory(value)}
             />
           </Card.Content>
           <Card.Actions style={styles.actions}>
             <Button onPress={onDismiss}>Cancel</Button>
-            <Button onPress={onAdd}>Add</Button>
+            <Button
+              onPress={onAdd}
+              disabled={!isAmountValid || !isCategoryValid}>
+              Add
+            </Button>
           </Card.Actions>
         </Card>
       </Modal>
