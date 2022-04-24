@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { SectionList } from 'react-native';
+import { SectionList, StyleSheet, View } from 'react-native';
 import { Title, ToggleButton } from 'react-native-paper';
 
 import PageWrapper from '../PageWrapper';
@@ -8,6 +8,7 @@ import { MockButtons } from '../../mock';
 
 import { getTransactions } from '../../storage';
 import { groupTransactionsBy } from './utils';
+import { Layout } from '../../styles';
 
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { GroupBy } from './types';
@@ -33,15 +34,18 @@ const Transactions = () => {
 
   return (
     <PageWrapper>
-      <MockButtons />
-      <ToggleButton.Row
-        onValueChange={value => setGroupBy(value as 'day' | 'week' | 'month')}
-        value={groupBy}>
-        <ToggleButton icon="calendar-today" value="day" />
-        <ToggleButton icon="calendar-range" value="week" />
-        <ToggleButton icon="calendar-month" value="month" />
-      </ToggleButton.Row>
+      <View style={styles.floatingActions}>
+        <MockButtons />
+        <ToggleButton.Row
+          onValueChange={value => setGroupBy(value as 'day' | 'week' | 'month')}
+          value={groupBy}>
+          <ToggleButton icon="calendar-today" value="day" />
+          <ToggleButton icon="calendar-range" value="week" />
+          <ToggleButton icon="calendar-month" value="month" />
+        </ToggleButton.Row>
+      </View>
       <SectionList
+        style={styles.listContainer}
         sections={sections}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
@@ -52,6 +56,15 @@ const Transactions = () => {
     </PageWrapper>
   );
 };
+
+const styles = StyleSheet.create({
+  floatingActions: {
+    ...Layout.allPadded,
+  },
+  listContainer: {
+    ...Layout.sidePadded,
+  },
+});
 
 export default Transactions;
 export * from './types';

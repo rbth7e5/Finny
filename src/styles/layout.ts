@@ -9,6 +9,11 @@ export const allPadded: ViewStyle = {
   paddingVertical: 8,
 };
 
+export const fixedTop: ViewStyle = {
+  position: 'absolute',
+  top: 0,
+};
+
 export const floating = (positioning: {
   top?: number;
   bottom?: number;

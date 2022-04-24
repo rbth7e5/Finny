@@ -2,28 +2,23 @@ import React from 'react';
 import {
   SafeAreaView,
   StatusBar,
-  StyleSheet,
   View,
+  ViewProps,
   useColorScheme,
 } from 'react-native';
-import { Layout } from '../styles';
 
 type PageWrapperProps = {
   children: React.ReactNode;
-};
+} & ViewProps;
 
-const PageWrapper = ({ children }: PageWrapperProps) => {
+const PageWrapper = ({ children, ...viewProps }: PageWrapperProps) => {
   const isDarkMode = useColorScheme() === 'dark';
   return (
     <SafeAreaView>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View style={styles.container}>{children}</View>
+      <View {...viewProps}>{children}</View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: Layout.sidePadded,
-});
 
 export default PageWrapper;
