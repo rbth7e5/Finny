@@ -1,15 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ToggleButton } from 'react-native-paper';
+import { SectionList } from 'react-native';
+import { Title, ToggleButton } from 'react-native-paper';
+
 import PageWrapper from '../PageWrapper';
-import Section from './Section';
-import { TransactionInfoType } from '../../modals/TransactionInfo';
+import Transaction from './Transaction';
+import { MockButtons } from '../../mock';
+
 import { getTransactions } from '../../storage';
 import { groupTransactionsBy } from './utils';
-import { MockButtons } from '../../mock';
+
+import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { GroupBy } from './types';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
-  const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('week');
+  const [groupBy, setGroupBy] = useState<GroupBy>('week');
   useEffect(() => {
     let mounted = true;
     getTransactions().then(data => mounted && setTransactions(data));
@@ -18,10 +23,13 @@ const Transactions = () => {
     };
   });
 
-  const transactionsBy = useMemo(
-    () => groupTransactionsBy(transactions, groupBy),
-    [groupBy, transactions],
-  );
+  const sections = useMemo(() => {
+    const transactionsBy = groupTransactionsBy(transactions, groupBy);
+    return Object.entries(transactionsBy).map(([week, transactionsInWeek]) => ({
+      title: week,
+      data: transactionsInWeek,
+    }));
+  }, [groupBy, transactions]);
 
   return (
     <PageWrapper>
@@ -33,14 +41,14 @@ const Transactions = () => {
         <ToggleButton icon="calendar-range" value="week" />
         <ToggleButton icon="calendar-month" value="month" />
       </ToggleButton.Row>
-      {Object.entries(transactionsBy).map(([week, transactionsInWeek]) => (
-        <Section
-          key={week}
-          title={week}
-          transactions={transactionsInWeek}
-          groupBy={groupBy}
-        />
-      ))}
+      <SectionList
+        sections={sections}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <Transaction transactionInfo={item} groupBy={groupBy} />
+        )}
+        renderSectionHeader={({ section: { title } }) => <Title>{title}</Title>}
+      />
     </PageWrapper>
   );
 };
