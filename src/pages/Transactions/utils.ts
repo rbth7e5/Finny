@@ -1,10 +1,11 @@
-import { TransactionInfoType } from './modals/TransactionInfo';
 import { groupBy } from 'lodash';
 import moment, { Moment } from 'moment';
+import { GroupBy } from './types';
+import { TransactionInfoType } from '../../modals/TransactionInfo';
 
 export const groupTransactionsBy = (
   transactions: TransactionInfoType[],
-  by: 'day' | 'week' | 'month',
+  by: GroupBy,
 ): Record<string, TransactionInfoType[]> => {
   const format = (date: Moment) => ({
     day: date.format('DD MMM YYYY'),

@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ToggleButton } from 'react-native-paper';
 import PageWrapper from '../PageWrapper';
+import Section from './Section';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { getTransactions } from '../../storage';
-import { groupTransactionsBy } from '../../utils';
-import Section from './Section';
+import { groupTransactionsBy } from './utils';
 import { MockButtons } from '../../mock';
 
 const Transactions = () => {
@@ -46,3 +46,4 @@ const Transactions = () => {
 };
 
 export default Transactions;
+export * from './types';
