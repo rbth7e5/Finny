@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { Button } from 'react-native-paper';
 import React from 'react';
 import { Layout } from './styles';
+import _ from 'lodash';
 
 const generatePastMockTransactions = (
   amount: number,
@@ -46,11 +47,14 @@ const generatePastMockTransactions = (
   }));
 };
 
-const MOCK_TRANSACTIONS: TransactionInfoType[] = [
-  ...generatePastMockTransactions(0, 'day', 8),
-  ...generatePastMockTransactions(2, 'day', 10),
-  ...generatePastMockTransactions(100, 'day', 100),
-];
+const MOCK_TRANSACTIONS: TransactionInfoType[] = _.sortBy(
+  [
+    ...generatePastMockTransactions(0, 'day', 2),
+    ...generatePastMockTransactions(2, 'day', 10),
+    ...generatePastMockTransactions(100, 'day', 200),
+  ],
+  t => -t.timestamp,
+);
 
 export const addMockTransactions = async () => {
   console.log(MOCK_TRANSACTIONS);
