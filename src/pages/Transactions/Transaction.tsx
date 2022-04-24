@@ -47,8 +47,6 @@ const styles = StyleSheet.create({
       alignItems: 'center',
     }),
     ...Layout.allPadded,
-    ...Layout.marginBottomSmall,
-    ...Shapes.rounded,
   },
   details: {
     ...Layout.flexColumn({

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SectionList, StyleSheet, View } from 'react-native';
-import { Title, ToggleButton } from 'react-native-paper';
+import { Text, ToggleButton, useTheme } from 'react-native-paper';
 
 import PageWrapper from '../PageWrapper';
 import Transaction from './Transaction';
@@ -12,8 +12,11 @@ import { Layout } from '../../styles';
 
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { GroupBy } from './types';
+import { Theme } from 'react-native-paper/lib/typescript/types';
 
 const Transactions = () => {
+  const theme = useTheme();
+  const styles = makeStyles(theme);
   const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
   const [groupBy, setGroupBy] = useState<GroupBy>('week');
   useEffect(() => {
@@ -51,20 +54,27 @@ const Transactions = () => {
         renderItem={({ item }) => (
           <Transaction transactionInfo={item} groupBy={groupBy} />
         )}
-        renderSectionHeader={({ section: { title } }) => <Title>{title}</Title>}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.sectionHeader}>{title}</Text>
+        )}
       />
     </PageWrapper>
   );
 };
 
-const styles = StyleSheet.create({
-  floatingActions: {
-    ...Layout.allPadded,
-  },
-  listContainer: {
-    ...Layout.sidePadded,
-  },
-});
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    floatingActions: {
+      ...Layout.allPadded,
+    },
+    listContainer: {
+      ...Layout.sidePadded,
+    },
+    sectionHeader: {
+      backgroundColor: theme.colors.background,
+      ...Layout.verticalPaddedSmall,
+    },
+  });
 
 export default Transactions;
 export * from './types';

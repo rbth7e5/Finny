@@ -4,9 +4,17 @@ export const sidePadded: ViewStyle = {
   paddingHorizontal: 16,
 };
 
+export const verticalPadded: ViewStyle = {
+  paddingVertical: 16,
+};
+
+export const verticalPaddedSmall: ViewStyle = {
+  paddingVertical: 8,
+};
+
 export const allPadded: ViewStyle = {
   ...sidePadded,
-  paddingVertical: 8,
+  ...verticalPadded,
 };
 
 export const fixedTop: ViewStyle = {
