@@ -15,7 +15,7 @@ const displayTimestamp = (timestamp: number, groupBy: GroupBy) => {
   const time = moment(timestamp);
   switch (groupBy) {
     case 'day':
-      return time.format('H:mm A');
+      return time.format('h:mm A');
     case 'week':
       return time.format('ddd');
     case 'month':
