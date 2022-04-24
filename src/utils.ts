@@ -6,7 +6,7 @@ export const groupTransactionsBy = (
   transactions: TransactionInfoType[],
   by: 'day' | 'week' | 'month',
 ): Record<string, TransactionInfoType[]> => {
-  const formatBy = (date: Moment) => ({
+  const format = (date: Moment) => ({
     day: date.format('DD MMM YYYY'),
     week: `${date.startOf(by).format('DD MMM YYYY')} - ${date
       .endOf(by)
@@ -17,7 +17,7 @@ export const groupTransactionsBy = (
   return groupBy(transactions, t => {
     const date = moment(t.timestamp);
     const now = moment();
-    if (formatBy(date)[by] === formatBy(now)[by]) {
+    if (format(date)[by] === format(now)[by]) {
       switch (by) {
         case 'day':
           return 'Today';
@@ -26,7 +26,7 @@ export const groupTransactionsBy = (
         case 'month':
           return 'This Month';
       }
-    } else if (formatBy(date)[by] === formatBy(now.subtract(1, by))[by]) {
+    } else if (format(date)[by] === format(now.subtract(1, by))[by]) {
       switch (by) {
         case 'day':
           return 'Yesterday';
@@ -37,6 +37,6 @@ export const groupTransactionsBy = (
       }
     }
 
-    return formatBy(date)[by];
+    return format(date)[by];
   });
 };
