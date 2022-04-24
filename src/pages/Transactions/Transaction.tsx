@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Caption, Surface, Text } from 'react-native-paper';
 import moment from 'moment';
@@ -23,20 +23,22 @@ const displayTimestamp = (timestamp: number, groupBy: GroupBy) => {
   }
 };
 
-const Transaction = ({
-  transactionInfo: { amount, category, description, timestamp },
-  groupBy,
-}: TransactionProps) => {
-  return (
-    <Surface style={styles.container}>
-      <View style={styles.details}>
-        <Text>${amount?.toFixed(2)}</Text>
-        <Caption>{description ? description : category}</Caption>
-      </View>
-      <Text>{displayTimestamp(timestamp, groupBy)}</Text>
-    </Surface>
-  );
-};
+const Transaction = memo(
+  ({
+    transactionInfo: { amount, category, description, timestamp },
+    groupBy,
+  }: TransactionProps) => {
+    return (
+      <Surface style={styles.container}>
+        <View style={styles.details}>
+          <Text>${amount?.toFixed(2)}</Text>
+          <Caption>{description ? description : category}</Caption>
+        </View>
+        <Text>{displayTimestamp(timestamp, groupBy)}</Text>
+      </Surface>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {

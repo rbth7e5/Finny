@@ -1,9 +1,9 @@
 import React from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
+  View,
   useColorScheme,
 } from 'react-native';
 import { Layout } from '../styles';
@@ -17,11 +17,7 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
   return (
     <SafeAreaView>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={styles.container}>
-        {children}
-      </ScrollView>
+      <View style={styles.container}>{children}</View>
     </SafeAreaView>
   );
 };
