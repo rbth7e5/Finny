@@ -5,6 +5,7 @@ import { Layout } from '../../styles';
 import { TransactionInfoProps, TransactionInfoType } from './types';
 import { addTransaction } from '../../storage';
 import { generateDefaultTransaction } from './constants';
+import useAdjustKeyboard from '../useAdjustKeyboard';
 
 const TransactionInfo = ({
   transactionInfo,
@@ -42,11 +43,19 @@ const TransactionInfo = ({
       await addTransaction(newTransaction);
       setTransactionInfo(null);
     }
-  }, [amount, category, isAmountValid, isCategoryValid, setTransactionInfo]);
+  }, [
+    amount,
+    category,
+    description,
+    isAmountValid,
+    isCategoryValid,
+    setTransactionInfo,
+  ]);
 
   return (
     <Portal>
       <Modal
+        style={{ bottom: useAdjustKeyboard() }}
         visible={Boolean(transactionInfo)}
         onDismiss={onDismiss}
         contentContainerStyle={styles.container}>
