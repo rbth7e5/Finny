@@ -1,7 +1,12 @@
 import { FlexAlignType, ViewStyle } from 'react-native';
 
-export const padded: ViewStyle = {
-  padding: 16,
+export const sidePadded: ViewStyle = {
+  paddingHorizontal: 16,
+};
+
+export const allPadded: ViewStyle = {
+  ...sidePadded,
+  paddingVertical: 8,
 };
 
 export const floating = (positioning: {

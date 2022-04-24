@@ -23,6 +23,10 @@ const TransactionInfo = ({
   );
   const isCategoryValid: boolean = useMemo(() => Boolean(category), [category]);
 
+  const [description, setDescription] = useState<string | undefined>(
+    transactionInfo?.description,
+  );
+
   const onDismiss = useCallback(
     () => setTransactionInfo(null),
     [setTransactionInfo],
@@ -33,6 +37,7 @@ const TransactionInfo = ({
         ...generateDefaultTransaction(),
         amount: +amount!,
         category,
+        description,
       };
       await addTransaction(newTransaction);
       setTransactionInfo(null);
@@ -63,6 +68,11 @@ const TransactionInfo = ({
               value={category}
               onChangeText={value => setCategory(value)}
             />
+            <TextInput
+              label="Description"
+              value={description}
+              onChangeText={value => setDescription(value)}
+            />
           </Card.Content>
           <Card.Actions style={styles.actions}>
             <Button onPress={onDismiss}>Cancel</Button>
@@ -79,7 +89,7 @@ const TransactionInfo = ({
 };
 
 const styles = StyleSheet.create({
-  container: Layout.padded,
+  container: Layout.sidePadded,
   actions: Layout.flushRight,
 });
 

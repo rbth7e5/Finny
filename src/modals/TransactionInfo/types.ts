@@ -8,7 +8,8 @@ export type TransactionInfoProps = {
 export type TransactionInfoType = {
   id: string;
   amount?: number;
+  description?: string;
   category?: string;
   icon?: string;
-  timestamp?: number;
+  timestamp: number;
 };

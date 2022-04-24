@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { List } from 'react-native-paper';
+import React, { useEffect, useMemo, useState } from 'react';
 import PageWrapper from '../PageWrapper';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { getTransactions } from '../../storage';
-import Transaction from './Transaction';
+import { groupTransactionsByWeek } from '../../utils';
+import Section from './Section';
+import { MockButtons } from '../../mock';
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
@@ -14,13 +15,17 @@ const Transactions = () => {
       mounted = false;
     };
   });
+
+  const transactionsByWeek = useMemo(
+    () => groupTransactionsByWeek(transactions),
+    [transactions],
+  );
+
   return (
     <PageWrapper>
-      {transactions.map(transactionInfo => (
-        <Transaction
-          key={transactionInfo.id}
-          transactionInfo={transactionInfo}
-        />
+      <MockButtons />
+      {Object.entries(transactionsByWeek).map(([week, transactionsInWeek]) => (
+        <Section key={week} title={week} transactions={transactionsInWeek} />
       ))}
     </PageWrapper>
   );

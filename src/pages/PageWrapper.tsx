@@ -27,7 +27,7 @@ const PageWrapper = ({ children }: PageWrapperProps) => {
 };
 
 const styles = StyleSheet.create({
-  container: Layout.padded,
+  container: Layout.sidePadded,
 });
 
 export default PageWrapper;
