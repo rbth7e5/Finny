@@ -49,8 +49,7 @@ const generatePastMockTransactions = (
 
 const MOCK_TRANSACTIONS: TransactionInfoType[] = _.sortBy(
   [
-    ...generatePastMockTransactions(0, 'day', 2),
-    ...generatePastMockTransactions(2, 'day', 10),
+    ...generatePastMockTransactions(14, 'day', 56),
     ...generatePastMockTransactions(100, 'day', 200),
   ],
   t => -t.timestamp,
