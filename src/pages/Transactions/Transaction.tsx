@@ -4,23 +4,28 @@ import { Caption, Surface, Text } from 'react-native-paper';
 import moment from 'moment';
 import { Layout, Shapes } from '../../styles';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { GroupBy } from './types';
 
 type TransactionProps = {
   transactionInfo: TransactionInfoType;
+  groupBy: GroupBy;
 };
 
-const displayTimestamp = (timestamp: number) => {
+const displayTimestamp = (timestamp: number, groupBy: GroupBy) => {
   const time = moment(timestamp);
-  const now = moment();
-  if (time.week() === now.week()) {
-    return time.format('ddd');
-  } else {
-    return time.format('D MMM');
+  switch (groupBy) {
+    case 'day':
+      return time.format('H:mm A');
+    case 'week':
+      return time.format('ddd');
+    case 'month':
+      return time.format('D MMM');
   }
 };
 
 const Transaction = ({
   transactionInfo: { amount, category, description, timestamp },
+  groupBy,
 }: TransactionProps) => {
   return (
     <Surface style={styles.container}>
@@ -28,7 +33,7 @@ const Transaction = ({
         <Text>${amount?.toFixed(2)}</Text>
         <Caption>{description ? description : category}</Caption>
       </View>
-      <Text>{displayTimestamp(timestamp)}</Text>
+      <Text>{displayTimestamp(timestamp, groupBy)}</Text>
     </Surface>
   );
 };

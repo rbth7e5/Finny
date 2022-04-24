@@ -34,7 +34,12 @@ const Transactions = () => {
         <ToggleButton icon="calendar-month" value="month" />
       </ToggleButton.Row>
       {Object.entries(transactionsBy).map(([week, transactionsInWeek]) => (
-        <Section key={week} title={week} transactions={transactionsInWeek} />
+        <Section
+          key={week}
+          title={week}
+          transactions={transactionsInWeek}
+          groupBy={groupBy}
+        />
       ))}
     </PageWrapper>
   );

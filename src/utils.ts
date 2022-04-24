@@ -8,8 +8,10 @@ export const groupTransactionsBy = (
 ): Record<string, TransactionInfoType[]> => {
   const format = (date: Moment) => ({
     day: date.format('DD MMM YYYY'),
-    week: `${date.startOf('isoWeek').format('DD MMM YYYY')} - ${date
-      .endOf('isoWeek')
+    week: `${date
+      .startOf(by === 'week' ? 'isoWeek' : by)
+      .format('DD MMM YYYY')} - ${date
+      .endOf(by === 'week' ? 'isoWeek' : by)
       .format('DD MMM YYYY')}`,
     month: date.format('MMM YYYY'),
   });
