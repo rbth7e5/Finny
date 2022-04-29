@@ -52,6 +52,7 @@ const TransactionInfo = ({
     isAmountValid,
     isCategoryValid,
     setTransactionInfo,
+    setTransactions,
   ]);
 
   return (
