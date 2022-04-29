@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   container: Layout.sidePadded,
   actions: Layout.flushRight,
   fab: {
-    ...Layout.floating({ bottom: 112, right: 16 }),
+    ...Layout.floating({ bottom: 16, right: 16 }),
     opacity: 0.8,
   },
 });
