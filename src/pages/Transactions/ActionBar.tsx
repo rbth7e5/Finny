@@ -1,10 +1,10 @@
-import React, { Dispatch, SetStateAction, useMemo, useState } from 'react';
+import React, { Dispatch, SetStateAction, useState } from 'react';
 import { MockButtons } from '../../mock';
 import { IconButton, Searchbar, ToggleButton } from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
 import { Layout } from '../../styles';
 import { GroupBy, TransactionInfoType } from './types';
-import { groupTransactionsBy, searchTransactions } from './utils';
+import { searchTransactions } from './utils';
 import useTransactions from './useTransactions';
 
 export type ActionBarProps = {
