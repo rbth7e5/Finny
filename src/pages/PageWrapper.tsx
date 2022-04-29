@@ -2,6 +2,7 @@ import React from 'react';
 import {
   SafeAreaView,
   StatusBar,
+  StyleSheet,
   View,
   ViewProps,
   useColorScheme,
@@ -11,14 +12,22 @@ type PageWrapperProps = {
   children: React.ReactNode;
 } & ViewProps;
 
-const PageWrapper = ({ children, ...viewProps }: PageWrapperProps) => {
+const PageWrapper = ({ children, style, ...viewProps }: PageWrapperProps) => {
   const isDarkMode = useColorScheme() === 'dark';
   return (
     <SafeAreaView>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View {...viewProps}>{children}</View>
+      <View style={[styles.container, style]} {...viewProps}>
+        {children}
+      </View>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 96,
+  },
+});
 
 export default PageWrapper;
