@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, useState } from 'react';
+import React, { Dispatch, SetStateAction, useCallback, useState } from 'react';
 import { MockButtons } from '../../mock';
 import { IconButton, Searchbar, ToggleButton } from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
@@ -23,13 +23,22 @@ const ActionBar = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  const onChangeSearch = (query: string) => {
-    const filteredTransactions = searchTransactions(initialTransactions, query);
-    setTransactions(filteredTransactions);
-    setSearchQuery(query);
-  };
-  const onHideSearch = () => setShowSearch(false);
-  const onShowSearch = () => setShowSearch(true);
+  const onChangeSearch = useCallback(
+    (query: string) => {
+      const filteredTransactions = searchTransactions(
+        initialTransactions,
+        query,
+      );
+      setTransactions(filteredTransactions);
+      setSearchQuery(query);
+    },
+    [initialTransactions, setTransactions],
+  );
+  const onHideSearch = useCallback(() => {
+    setTransactions(initialTransactions);
+    setShowSearch(false);
+  }, [initialTransactions, setTransactions]);
+  const onShowSearch = useCallback(() => setShowSearch(true), []);
 
   return (
     <View style={styles.floatingActions}>
