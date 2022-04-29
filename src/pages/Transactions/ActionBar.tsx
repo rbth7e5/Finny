@@ -4,17 +4,30 @@ import { IconButton, Searchbar, ToggleButton } from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
 import { Layout } from '../../styles';
 import { GroupBy } from './types';
+import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { searchTransactions } from './utils';
+import useTransactions from './useTransactions';
 
 export type ActionBarProps = {
   groupBy: GroupBy;
   setGroupBy: Dispatch<SetStateAction<GroupBy>>;
+  setTransactions: Dispatch<SetStateAction<TransactionInfoType[]>>;
 };
 
-const ActionBar = ({ groupBy, setGroupBy }: ActionBarProps) => {
+const ActionBar = ({
+  groupBy,
+  setGroupBy,
+  setTransactions,
+}: ActionBarProps) => {
+  const [transactions] = useTransactions();
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  const onChangeSearch = (query: string) => setSearchQuery(query);
+  const onChangeSearch = (query: string) => {
+    const filteredTransactions = searchTransactions(transactions, query);
+    setTransactions(filteredTransactions);
+    setSearchQuery(query);
+  };
   const onHideSearch = () => setShowSearch(false);
   const onShowSearch = () => setShowSearch(true);
 

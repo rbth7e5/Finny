@@ -1,9 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, useColorScheme } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { useColorScheme } from 'react-native';
 import {
   Provider as PaperProvider,
   BottomNavigation,
-  FAB,
 } from 'react-native-paper';
 
 import Transactions from './pages/Transactions';
@@ -11,11 +10,6 @@ import Overview from './pages/Overview';
 
 import { DARK_THEME, LIGHT_THEME } from './theme';
 import { Tab } from './enums';
-import { Layout } from './styles';
-import TransactionInfo, {
-  TransactionInfoType,
-  generateDefaultTransaction,
-} from './modals/TransactionInfo';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -33,12 +27,6 @@ const App = () => {
     overview: Overview,
   });
 
-  const [transactionInfo, setTransactionInfo] =
-    useState<TransactionInfoType | null>(null);
-  const addNewTransaction = useCallback(() => {
-    setTransactionInfo(generateDefaultTransaction());
-  }, []);
-
   return (
     <PaperProvider theme={isDarkMode ? DARK_THEME : LIGHT_THEME}>
       <BottomNavigation
@@ -46,17 +34,8 @@ const App = () => {
         onIndexChange={setTab}
         renderScene={renderScene}
       />
-      <FAB style={styles.fab} icon="plus" onPress={addNewTransaction} />
-      <TransactionInfo
-        transactionInfo={transactionInfo}
-        setTransactionInfo={setTransactionInfo}
-      />
     </PaperProvider>
   );
 };
-
-const styles = StyleSheet.create({
-  fab: Layout.floating({ bottom: 64, right: 16 }),
-});
 
 export default App;

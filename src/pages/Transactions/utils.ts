@@ -43,3 +43,16 @@ export const groupTransactionsBy = (
     return format(date)[by];
   });
 };
+
+export const searchTransactions = (
+  transactions: TransactionInfoType[],
+  searchText: string,
+): TransactionInfoType[] => {
+  return transactions.filter(
+    transaction =>
+      transaction.description
+        ?.toLowerCase()
+        .includes(searchText.toLowerCase()) ||
+      transaction.category?.toLowerCase().includes(searchText.toLowerCase()),
+  );
+};

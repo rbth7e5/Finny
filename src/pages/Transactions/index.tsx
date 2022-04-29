@@ -1,31 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { SectionList, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { FAB, Text, useTheme } from 'react-native-paper';
 
+import useTransactions from './useTransactions';
 import PageWrapper from '../PageWrapper';
 import Transaction from './Transaction';
+import ActionBar from './ActionBar';
 
-import { getTransactions } from '../../storage';
-import { groupTransactionsBy } from './utils';
 import { Layout } from '../../styles';
-
-import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { groupTransactionsBy } from './utils';
+import TransactionInfo, {
+  generateDefaultTransaction,
+  TransactionInfoType,
+} from '../../modals/TransactionInfo';
 import { GroupBy } from './types';
 import { Theme } from 'react-native-paper/lib/typescript/types';
-import ActionBar from './ActionBar';
 
 const Transactions = () => {
   const theme = useTheme();
   const styles = makeStyles(theme);
-  const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
+  const [transactions, setTransactions] = useTransactions();
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
-  useEffect(() => {
-    let mounted = true;
-    getTransactions().then(data => mounted && setTransactions(data));
-    return () => {
-      mounted = false;
-    };
-  });
+
+  const [transactionInfo, setTransactionInfo] =
+    useState<TransactionInfoType | null>(null);
+  const addNewTransaction = useCallback(() => {
+    setTransactionInfo(generateDefaultTransaction());
+  }, []);
 
   const sections = useMemo(() => {
     const transactionsBy = groupTransactionsBy(transactions, groupBy);
@@ -37,7 +38,11 @@ const Transactions = () => {
 
   return (
     <PageWrapper>
-      <ActionBar groupBy={groupBy} setGroupBy={setGroupBy} />
+      <ActionBar
+        groupBy={groupBy}
+        setGroupBy={setGroupBy}
+        setTransactions={setTransactions}
+      />
       <SectionList
         style={styles.listContainer}
         sections={sections}
@@ -48,6 +53,11 @@ const Transactions = () => {
         renderSectionHeader={({ section: { title } }) => (
           <Text style={styles.sectionHeader}>{title}</Text>
         )}
+      />
+      <FAB style={styles.fab} icon="plus" onPress={addNewTransaction} />
+      <TransactionInfo
+        transactionInfo={transactionInfo}
+        setTransactionInfo={setTransactionInfo}
       />
     </PageWrapper>
   );
@@ -61,6 +71,10 @@ const makeStyles = (theme: Theme) =>
     sectionHeader: {
       backgroundColor: theme.colors.background,
       ...Layout.verticalPaddedSmall,
+    },
+    fab: {
+      ...Layout.floating({ bottom: 112, right: 16 }),
+      opacity: 0.8,
     },
   });
 
