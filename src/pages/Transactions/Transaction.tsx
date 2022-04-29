@@ -3,8 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Caption, Surface, Text } from 'react-native-paper';
 import moment from 'moment';
 import { Layout } from '../../styles';
-import { TransactionInfoType } from '../../modals/TransactionInfo';
-import { GroupBy } from './types';
+import { GroupBy, TransactionInfoType } from './types';
 
 type TransactionProps = {
   transactionInfo: TransactionInfoType;

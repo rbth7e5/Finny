@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TransactionInfoType } from '../modals/TransactionInfo';
+import { TransactionInfoType } from '../pages/Transactions';
 
 export const TRANSACTION_STORAGE_KEY = '@transactions';
 

@@ -1,7 +1,7 @@
 import { groupBy } from 'lodash';
 import moment, { Moment } from 'moment';
-import { GroupBy } from './types';
-import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { GroupBy, TransactionInfoType } from './types';
+import uuid from 'react-native-uuid';
 
 export const groupTransactionsBy = (
   transactions: TransactionInfoType[],
@@ -56,3 +56,10 @@ export const searchTransactions = (
       transaction.category?.toLowerCase().includes(searchText.toLowerCase()),
   );
 };
+
+export const generateDefaultTransaction = (): TransactionInfoType => ({
+  id: uuid.v4() as string,
+  category: 'food',
+  icon: 'food',
+  timestamp: new Date().getTime(),
+});

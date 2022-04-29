@@ -1,18 +1,15 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { SectionList, StyleSheet } from 'react-native';
-import { FAB, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 
 import useTransactions from './useTransactions';
 import PageWrapper from '../PageWrapper';
 import Transaction from './Transaction';
 import ActionBar from './ActionBar';
+import NewTransactionFAB from './NewTransactionFAB';
 
 import { Layout } from '../../styles';
 import { groupTransactionsBy } from './utils';
-import TransactionInfo, {
-  generateDefaultTransaction,
-  TransactionInfoType,
-} from '../../modals/TransactionInfo';
 import { GroupBy } from './types';
 import { Theme } from 'react-native-paper/lib/typescript/types';
 
@@ -21,12 +18,6 @@ const Transactions = () => {
   const styles = makeStyles(theme);
   const [transactions, setTransactions] = useTransactions();
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
-
-  const [transactionInfo, setTransactionInfo] =
-    useState<TransactionInfoType | null>(null);
-  const addNewTransaction = useCallback(() => {
-    setTransactionInfo(generateDefaultTransaction());
-  }, []);
 
   const sections = useMemo(() => {
     const transactionsBy = groupTransactionsBy(transactions, groupBy);
@@ -54,12 +45,7 @@ const Transactions = () => {
           <Text style={styles.sectionHeader}>{title}</Text>
         )}
       />
-      <FAB style={styles.fab} icon="plus" onPress={addNewTransaction} />
-      <TransactionInfo
-        transactionInfo={transactionInfo}
-        setTransactionInfo={setTransactionInfo}
-        setTransactions={setTransactions}
-      />
+      <NewTransactionFAB setTransactions={setTransactions} />
     </PageWrapper>
   );
 };
@@ -73,11 +59,8 @@ const makeStyles = (theme: Theme) =>
       backgroundColor: theme.colors.background,
       ...Layout.verticalPaddedSmall,
     },
-    fab: {
-      ...Layout.floating({ bottom: 112, right: 16 }),
-      opacity: 0.8,
-    },
   });
 
 export default Transactions;
 export * from './types';
+export { generateDefaultTransaction } from './utils';

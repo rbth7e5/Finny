@@ -3,8 +3,7 @@ import { MockButtons } from '../../mock';
 import { IconButton, Searchbar, ToggleButton } from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
 import { Layout } from '../../styles';
-import { GroupBy } from './types';
-import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { GroupBy, TransactionInfoType } from './types';
 import { groupTransactionsBy, searchTransactions } from './utils';
 import useTransactions from './useTransactions';
 

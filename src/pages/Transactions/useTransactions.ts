@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { getTransactions } from '../../storage';
-import { TransactionInfoType } from '../../modals/TransactionInfo';
+import { TransactionInfoType } from './types';
 
 export default function useTransactions(): [
   TransactionInfoType[],

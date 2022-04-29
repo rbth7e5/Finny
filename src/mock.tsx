@@ -6,8 +6,8 @@ import _ from 'lodash';
 import uuid from 'react-native-uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deleteTransactions, TRANSACTION_STORAGE_KEY } from './storage';
-import { TransactionInfoType } from './modals/TransactionInfo';
 import { Layout } from './styles';
+import { TransactionInfoType } from './pages/Transactions';
 
 const generatePastMockTransactions = (
   amount: number,
