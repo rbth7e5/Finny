@@ -58,6 +58,7 @@ const Transactions = () => {
       <TransactionInfo
         transactionInfo={transactionInfo}
         setTransactionInfo={setTransactionInfo}
+        setTransactions={setTransactions}
       />
     </PageWrapper>
   );

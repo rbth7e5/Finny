@@ -10,6 +10,7 @@ import useAdjustKeyboard from '../useAdjustKeyboard';
 const TransactionInfo = ({
   transactionInfo,
   setTransactionInfo,
+  setTransactions,
 }: TransactionInfoProps) => {
   const [amount, setAmount] = useState<string | undefined>(
     transactionInfo?.amount ? String(transactionInfo?.amount) : undefined,
@@ -41,6 +42,7 @@ const TransactionInfo = ({
         description,
       };
       await addTransaction(newTransaction);
+      setTransactions(oldTransactions => [newTransaction, ...oldTransactions]);
       setTransactionInfo(null);
     }
   }, [
