@@ -32,6 +32,7 @@ const Transactions = () => {
       <ActionBar
         groupBy={groupBy}
         setGroupBy={setGroupBy}
+        transactions={transactions}
         setTransactions={setTransactions}
       />
       <SectionList

@@ -5,25 +5,26 @@ import { StyleSheet, View } from 'react-native';
 import { Layout } from '../../styles';
 import { GroupBy, TransactionInfoType } from './types';
 import { searchTransactions } from './utils';
-import useTransactions from './useTransactions';
 
 export type ActionBarProps = {
   groupBy: GroupBy;
   setGroupBy: Dispatch<SetStateAction<GroupBy>>;
+  transactions: TransactionInfoType[];
   setTransactions: Dispatch<SetStateAction<TransactionInfoType[]>>;
 };
 
 const ActionBar = ({
   groupBy,
   setGroupBy,
+  transactions,
   setTransactions,
 }: ActionBarProps) => {
-  const [transactions] = useTransactions();
+  const [initialTransactions] = useState(transactions);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
   const onChangeSearch = (query: string) => {
-    const filteredTransactions = searchTransactions(transactions, query);
+    const filteredTransactions = searchTransactions(initialTransactions, query);
     setTransactions(filteredTransactions);
     setSearchQuery(query);
   };
@@ -34,6 +35,7 @@ const ActionBar = ({
     <View style={styles.floatingActions}>
       {showSearch && (
         <Searchbar
+          autoFocus
           icon="chevron-left"
           placeholder="Search Transactions"
           value={searchQuery}
