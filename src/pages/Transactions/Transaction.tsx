@@ -2,7 +2,7 @@ import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Caption, Surface, Text } from 'react-native-paper';
 import moment from 'moment';
-import { Layout, Shapes } from '../../styles';
+import { Layout } from '../../styles';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { GroupBy } from './types';
 

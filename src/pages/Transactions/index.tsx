@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { SectionList, StyleSheet, View } from 'react-native';
-import { Text, ToggleButton, useTheme } from 'react-native-paper';
+import { SectionList, StyleSheet } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
 
 import PageWrapper from '../PageWrapper';
 import Transaction from './Transaction';
-import { MockButtons } from '../../mock';
 
 import { getTransactions } from '../../storage';
 import { groupTransactionsBy } from './utils';
@@ -13,12 +12,13 @@ import { Layout } from '../../styles';
 import { TransactionInfoType } from '../../modals/TransactionInfo';
 import { GroupBy } from './types';
 import { Theme } from 'react-native-paper/lib/typescript/types';
+import ActionBar from './ActionBar';
 
 const Transactions = () => {
   const theme = useTheme();
   const styles = makeStyles(theme);
   const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
-  const [groupBy, setGroupBy] = useState<GroupBy>('week');
+  const [groupBy, setGroupBy] = useState<GroupBy>('day');
   useEffect(() => {
     let mounted = true;
     getTransactions().then(data => mounted && setTransactions(data));
@@ -37,16 +37,7 @@ const Transactions = () => {
 
   return (
     <PageWrapper>
-      <View style={styles.floatingActions}>
-        <MockButtons />
-        <ToggleButton.Row
-          onValueChange={value => setGroupBy(value as 'day' | 'week' | 'month')}
-          value={groupBy}>
-          <ToggleButton icon="calendar-today" value="day" />
-          <ToggleButton icon="calendar-range" value="week" />
-          <ToggleButton icon="calendar-month" value="month" />
-        </ToggleButton.Row>
-      </View>
+      <ActionBar groupBy={groupBy} setGroupBy={setGroupBy} />
       <SectionList
         style={styles.listContainer}
         sections={sections}
@@ -64,9 +55,6 @@ const Transactions = () => {
 
 const makeStyles = (theme: Theme) =>
   StyleSheet.create({
-    floatingActions: {
-      ...Layout.allPadded,
-    },
     listContainer: {
       ...Layout.sidePadded,
     },

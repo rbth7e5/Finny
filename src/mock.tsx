@@ -1,13 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import moment from 'moment';
-import { TransactionInfoType } from './modals/TransactionInfo';
-import uuid from 'react-native-uuid';
-import { deleteTransactions, TRANSACTION_STORAGE_KEY } from './storage';
-import { View } from 'react-native';
-import { Button } from 'react-native-paper';
 import React from 'react';
-import { Layout } from './styles';
+import { View } from 'react-native';
+import { IconButton } from 'react-native-paper';
+import moment from 'moment';
 import _ from 'lodash';
+import uuid from 'react-native-uuid';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { deleteTransactions, TRANSACTION_STORAGE_KEY } from './storage';
+import { TransactionInfoType } from './modals/TransactionInfo';
+import { Layout } from './styles';
 
 const generatePastMockTransactions = (
   amount: number,
@@ -69,7 +69,7 @@ export const MockButtons = () => (
       justifyContent: 'space-between',
       alignItems: 'center',
     })}>
-    <Button onPress={() => addMockTransactions()}>Mock</Button>
-    <Button onPress={() => deleteTransactions()}>Delete</Button>
+    <IconButton icon="file" onPress={() => addMockTransactions()} />
+    <IconButton icon="delete" onPress={() => deleteTransactions()} />
   </View>
 );
