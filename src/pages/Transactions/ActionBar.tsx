@@ -9,17 +9,16 @@ import { searchTransactions } from './utils';
 export type ActionBarProps = {
   groupBy: GroupBy;
   setGroupBy: Dispatch<SetStateAction<GroupBy>>;
-  transactions: TransactionInfoType[];
+  initialTransactions: TransactionInfoType[];
   setTransactions: Dispatch<SetStateAction<TransactionInfoType[]>>;
 };
 
 const ActionBar = ({
   groupBy,
   setGroupBy,
-  transactions,
+  initialTransactions,
   setTransactions,
 }: ActionBarProps) => {
-  const [initialTransactions] = useState(transactions);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 

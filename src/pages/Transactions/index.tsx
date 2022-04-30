@@ -16,7 +16,8 @@ import { Theme } from 'react-native-paper/lib/typescript/types';
 const Transactions = () => {
   const theme = useTheme();
   const styles = makeStyles(theme);
-  const [transactions, setTransactions] = useTransactions();
+  const [transactions, setTransactions, initialTransactions] =
+    useTransactions();
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
 
   const sections = useMemo(() => {
@@ -32,7 +33,7 @@ const Transactions = () => {
       <ActionBar
         groupBy={groupBy}
         setGroupBy={setGroupBy}
-        transactions={transactions}
+        initialTransactions={initialTransactions}
         setTransactions={setTransactions}
       />
       {transactions.length > 0 ? (
