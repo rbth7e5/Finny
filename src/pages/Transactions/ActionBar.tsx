@@ -52,7 +52,7 @@ const ActionBar = ({
         />
       )}
       <IconButton onPress={onShowSearch} icon="magnify" />
-      <MockButtons />
+      <MockButtons setTransactions={setTransactions} />
       <ToggleButton.Row
         onValueChange={value => setGroupBy(value as 'day' | 'week' | 'month')}
         value={groupBy}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import { View } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import moment from 'moment';
@@ -61,15 +61,29 @@ export const addMockTransactions = async () => {
     TRANSACTION_STORAGE_KEY,
     JSON.stringify(MOCK_TRANSACTIONS),
   );
+  return MOCK_TRANSACTIONS;
 };
 
-export const MockButtons = () => (
+export const MockButtons = ({
+  setTransactions,
+}: {
+  setTransactions: Dispatch<SetStateAction<TransactionInfoType[]>>;
+}) => (
   <View
     style={Layout.flexRow({
       justifyContent: 'space-between',
       alignItems: 'center',
     })}>
-    <IconButton icon="file" onPress={() => addMockTransactions()} />
-    <IconButton icon="delete" onPress={() => deleteTransactions()} />
+    <IconButton
+      icon="file"
+      onPress={async () => setTransactions(await addMockTransactions())}
+    />
+    <IconButton
+      icon="delete"
+      onPress={async () => {
+        await deleteTransactions();
+        setTransactions([]);
+      }}
+    />
   </View>
 );
