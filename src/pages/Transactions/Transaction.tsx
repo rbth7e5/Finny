@@ -4,6 +4,7 @@ import { Caption, Surface, Text } from 'react-native-paper';
 import moment from 'moment';
 import { Layout } from '../../styles';
 import { GroupBy, TransactionInfoType } from './types';
+import { formatDateForWeek } from './utils';
 
 type TransactionProps = {
   transactionInfo: TransactionInfoType;
@@ -18,7 +19,7 @@ const displayTimestamp = (timestamp: number, groupBy: GroupBy) => {
     case 'week':
       return time.format('ddd');
     case 'month':
-      return time.format('D MMM');
+      return formatDateForWeek(time, 'week');
   }
 };
 
