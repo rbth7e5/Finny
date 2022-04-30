@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { SectionList, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { SectionList, StyleSheet, View } from 'react-native';
+import { Caption, Text, useTheme } from 'react-native-paper';
 
 import useTransactions from './useTransactions';
 import PageWrapper from '../PageWrapper';
@@ -35,17 +35,23 @@ const Transactions = () => {
         transactions={transactions}
         setTransactions={setTransactions}
       />
-      <SectionList
-        style={styles.listContainer}
-        sections={sections}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <Transaction transactionInfo={item} groupBy={groupBy} />
-        )}
-        renderSectionHeader={({ section: { title } }) => (
-          <Text style={styles.sectionHeader}>{title}</Text>
-        )}
-      />
+      {transactions.length > 0 ? (
+        <SectionList
+          style={styles.listContainer}
+          sections={sections}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <Transaction transactionInfo={item} groupBy={groupBy} />
+          )}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionHeader}>{title}</Text>
+          )}
+        />
+      ) : (
+        <View style={styles.emptyView}>
+          <Caption>No Transactions</Caption>
+        </View>
+      )}
       <NewTransactionFAB setTransactions={setTransactions} />
     </PageWrapper>
   );
@@ -55,6 +61,10 @@ const makeStyles = (theme: Theme) =>
   StyleSheet.create({
     listContainer: {
       ...Layout.sidePadded,
+    },
+    emptyView: {
+      height: '100%',
+      ...Layout.flexColumn({ justifyContent: 'center', alignItems: 'center' }),
     },
     sectionHeader: {
       backgroundColor: theme.colors.background,
