@@ -79,6 +79,7 @@ const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
             />
             <Card.Content>
               <TextInput
+                left={<TextInput.Icon name="currency-usd" />}
                 label="Amount"
                 keyboardType="numeric"
                 error={!isAmountValid}
@@ -86,12 +87,14 @@ const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
                 onChangeText={value => setAmount(value)}
               />
               <TextInput
+                left={<TextInput.Icon name="shape" />}
                 label="Category"
                 error={!isCategoryValid}
                 value={category}
                 onChangeText={value => setCategory(value)}
               />
               <TextInput
+                left={<TextInput.Icon name="image-text" />}
                 label="Description"
                 value={description}
                 onChangeText={value => setDescription(value)}
