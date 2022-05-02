@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { getTransactions } from '../../storage';
+import { readTransactions } from '../../storage';
 import { TransactionInfoType } from './types';
 
 export default function useTransactions(): [
@@ -13,7 +13,7 @@ export default function useTransactions(): [
   const [transactions, setTransactions] = useState<TransactionInfoType[]>([]);
   useEffect(() => {
     let mounted = true;
-    getTransactions().then(data => {
+    readTransactions().then(data => {
       if (mounted) {
         setTransactions(data);
         setInitialTransactions(data);

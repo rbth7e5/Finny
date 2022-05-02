@@ -10,7 +10,7 @@ import {
 import { StyleSheet } from 'react-native';
 import useAdjustKeyboard from '../../hooks/useAdjustKeyboard';
 import { Layout } from '../../styles';
-import { addTransaction } from '../../storage';
+import { createTransactions } from '../../storage';
 import { TransactionInfoProps, TransactionInfoType } from './types';
 import { generateDefaultTransaction } from './utils';
 
@@ -50,7 +50,7 @@ const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
         category,
         description,
       };
-      await addTransaction(newTransaction);
+      await createTransactions(newTransaction);
       setTransactions(oldTransactions => [newTransaction, ...oldTransactions]);
       setTransactionInfo(null);
     }
