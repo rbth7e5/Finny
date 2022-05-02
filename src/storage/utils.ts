@@ -5,11 +5,17 @@ export interface EntityType {
   plural: string;
 }
 
+export type CreateFunctionType<T> = (items: T | T[]) => Promise<void>;
+export type ReadFunctionType<T> = (
+  predicate?: (item: T) => boolean,
+) => Promise<T[]>;
+export type UpdateFunctionType<T> = (items: T | T[]) => Promise<void>;
+export type DeleteFunctionType = (ids?: (string | number)[]) => Promise<void>;
 export type CRUDFunctions<T> = [
-  (items: T | T[]) => Promise<void>,
-  (predicate?: (item: T) => boolean) => Promise<T[]>,
-  (items: T | T[]) => Promise<void>,
-  (ids?: (string | number)[]) => Promise<void>,
+  CreateFunctionType<T>,
+  ReadFunctionType<T>,
+  UpdateFunctionType<T>,
+  DeleteFunctionType,
 ];
 
 export function createCRUD<T>(

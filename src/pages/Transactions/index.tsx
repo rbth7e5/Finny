@@ -2,22 +2,24 @@ import React, { useMemo, useState } from 'react';
 import { SectionList, StyleSheet, View } from 'react-native';
 import { Caption, Text, useTheme } from 'react-native-paper';
 
-import useTransactions from './useTransactions';
 import PageWrapper from '../PageWrapper';
 import Transaction from './Transaction';
 import ActionBar from './ActionBar';
 import NewTransactionFAB from './NewTransactionFAB';
 
+import useEntitiesFromStorage from '../../storage/useEntitiesFromStorage';
+
 import { Layout } from '../../styles';
 import { groupTransactionsBy } from './utils';
 import { GroupBy } from './types';
 import { Theme } from 'react-native-paper/lib/typescript/types';
+import { readTransactions, TransactionInfoType } from '../../storage';
 
 const Transactions = () => {
   const theme = useTheme();
   const styles = makeStyles(theme);
   const [transactions, setTransactions, initialTransactions] =
-    useTransactions();
+    useEntitiesFromStorage<TransactionInfoType>(readTransactions);
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
 
   const sections = useMemo(() => {
@@ -75,4 +77,4 @@ const makeStyles = (theme: Theme) =>
 
 export default Transactions;
 export * from './types';
-export { generateDefaultTransaction } from './utils';
+export * from './utils';
