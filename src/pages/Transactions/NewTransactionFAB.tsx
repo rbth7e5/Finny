@@ -11,6 +11,7 @@ import { StyleSheet } from 'react-native';
 import useAdjustKeyboard from '../../hooks/useAdjustKeyboard';
 import { Layout } from '../../styles';
 import {
+  createCategories,
   createTransactions,
   readCategories,
   TransactionInfoType,
@@ -56,17 +57,20 @@ const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
         category,
         description,
       };
+      if (!categories.includes(category!)) {
+        await createCategories(category!);
+      }
       await createTransactions(newTransaction);
       setTransactions(oldTransactions => [newTransaction, ...oldTransactions]);
       setTransactionInfo(null);
     }
   }, [
     amount,
+    categories,
     category,
     description,
     isAmountValid,
     isCategoryValid,
-    setTransactionInfo,
     setTransactions,
   ]);
 
