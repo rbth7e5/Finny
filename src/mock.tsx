@@ -6,6 +6,8 @@ import _ from 'lodash';
 import uuid from 'react-native-uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  createCategories,
+  createTransactions,
   deleteTransactions,
   TRANSACTION_ENTITY,
   TransactionInfoType,
@@ -50,6 +52,14 @@ const generatePastMockTransactions = (
   }));
 };
 
+const MOCK_CATEGORIES: string[] = [
+  'Drinks',
+  'Food',
+  'Shopping',
+  'Pets',
+  'Transport',
+];
+
 const MOCK_TRANSACTIONS: TransactionInfoType[] = _.sortBy(
   [
     ...generatePastMockTransactions(14, 'day', 56),
@@ -59,11 +69,8 @@ const MOCK_TRANSACTIONS: TransactionInfoType[] = _.sortBy(
 );
 
 export const addMockTransactions = async () => {
-  console.log(MOCK_TRANSACTIONS);
-  await AsyncStorage.setItem(
-    TRANSACTION_ENTITY.singular,
-    JSON.stringify(MOCK_TRANSACTIONS),
-  );
+  await createTransactions(MOCK_TRANSACTIONS);
+  await createCategories(MOCK_CATEGORIES);
   return MOCK_TRANSACTIONS;
 };
 

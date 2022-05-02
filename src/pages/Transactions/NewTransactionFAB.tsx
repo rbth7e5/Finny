@@ -10,11 +10,17 @@ import {
 import { StyleSheet } from 'react-native';
 import useAdjustKeyboard from '../../hooks/useAdjustKeyboard';
 import { Layout } from '../../styles';
-import { createTransactions, TransactionInfoType } from '../../storage';
+import {
+  createTransactions,
+  readCategories,
+  TransactionInfoType,
+} from '../../storage';
 import { TransactionInfoProps } from './types';
 import { generateDefaultTransaction } from './utils';
+import useEntitiesFromStorage from '../../storage/useEntitiesFromStorage';
 
 const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
+  const [categories] = useEntitiesFromStorage<string>(readCategories);
   const [transactionInfo, setTransactionInfo] =
     useState<TransactionInfoType | null>(null);
   const addNewTransaction = useCallback(() => {
