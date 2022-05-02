@@ -3,8 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { Caption, Surface, Text } from 'react-native-paper';
 import moment from 'moment';
 import { Layout } from '../../styles';
-import { GroupBy, TransactionInfoType } from './types';
+import { GroupBy } from './types';
 import { formatDateForWeek } from './utils';
+import { TransactionInfoType } from '../../storage';
 
 type TransactionProps = {
   transactionInfo: TransactionInfoType;

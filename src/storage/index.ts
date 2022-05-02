@@ -1,2 +1,3 @@
-export * from './transactions';
 export * from './utils';
+export * from './transactions';
+export * from './categories';

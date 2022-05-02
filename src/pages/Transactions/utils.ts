@@ -1,7 +1,8 @@
 import { groupBy } from 'lodash';
 import moment, { Moment } from 'moment';
-import { GroupBy, TransactionInfoType } from './types';
+import { GroupBy } from './types';
 import uuid from 'react-native-uuid';
+import { TransactionInfoType } from '../../storage';
 
 export const formatDateForWeek = (date: moment.Moment, by: GroupBy) => {
   const start = date.clone().startOf(by === 'week' ? 'isoWeek' : by);

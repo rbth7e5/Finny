@@ -1,19 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export interface IdentifiableType {
-  id: string | number;
+export interface EntityType {
+  singular: string;
+  plural: string;
 }
 
-export type CRUDFunctions<T extends IdentifiableType> = [
+export type CRUDFunctions<T> = [
   (items: T | T[]) => Promise<void>,
   (predicate?: (item: T) => boolean) => Promise<T[]>,
   (items: T | T[]) => Promise<void>,
   (ids?: (string | number)[]) => Promise<void>,
 ];
 
-export function createCRUD<T extends IdentifiableType>(
-  key: string,
+export function createCRUD<T>(
+  { singular, plural }: EntityType,
+  entityKey: (entity: T) => string | number,
 ): CRUDFunctions<T> {
+  const key = singular;
   const read = async (predicate?: (item: T) => boolean): Promise<T[]> => {
     try {
       const existingTransactionsRaw = await AsyncStorage.getItem(key);
@@ -26,7 +29,7 @@ export function createCRUD<T extends IdentifiableType>(
       }
       return [];
     } catch (error) {
-      throw new Error(`Failed to retrieve ${key}`);
+      throw new Error(`Failed to retrieve ${plural}`);
     }
   };
 
@@ -37,17 +40,21 @@ export function createCRUD<T extends IdentifiableType>(
       const updatedTransactions = [...elements, ...existingTransactions];
       await AsyncStorage.setItem(key, JSON.stringify(updatedTransactions));
     } catch (error) {
-      throw new Error(`Failed to add ${key}${elements.length > 1 ? 's' : ''}`);
+      throw new Error(
+        `Failed to add ${elements.length > 1 ? plural : singular}`,
+      );
     }
   };
 
-  const deleteItems = async (ids?: (string | number)[]) => {
+  const deleteItems = async (keys?: (string | number)[]) => {
     try {
-      const remaining = ids ? await read(item => !ids.includes(item.id)) : [];
+      const remaining = keys
+        ? await read(item => !keys.includes(entityKey(item)))
+        : [];
       await AsyncStorage.setItem(key, JSON.stringify(remaining));
     } catch (error) {
       throw new Error(
-        `Failed to delete ${key}${ids && ids.length > 1 ? 's' : ''}`,
+        `Failed to delete ${key}${keys && keys.length > 1 ? plural : singular}`,
       );
     }
   };
@@ -55,10 +62,12 @@ export function createCRUD<T extends IdentifiableType>(
   const update = async (items: T | T[]) => {
     const elements: T[] = ([] as T[]).concat(items);
     try {
-      await deleteItems(elements.map(item => item.id));
+      await deleteItems(elements.map(item => entityKey(item)));
       await create(items);
     } catch (error) {
-      throw new Error(`Failed to update ${key}`);
+      throw new Error(
+        `Failed to update ${elements.length > 1 ? plural : singular}`,
+      );
     }
   };
 

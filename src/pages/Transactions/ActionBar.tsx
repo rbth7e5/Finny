@@ -3,8 +3,9 @@ import { MockButtons } from '../../mock';
 import { IconButton, Searchbar, ToggleButton } from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
 import { Layout } from '../../styles';
-import { GroupBy, TransactionInfoType } from './types';
+import { GroupBy } from './types';
 import { searchTransactions } from './utils';
+import { TransactionInfoType } from '../../storage';
 
 export type ActionBarProps = {
   groupBy: GroupBy;

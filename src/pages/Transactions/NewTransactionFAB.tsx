@@ -10,8 +10,8 @@ import {
 import { StyleSheet } from 'react-native';
 import useAdjustKeyboard from '../../hooks/useAdjustKeyboard';
 import { Layout } from '../../styles';
-import { createTransactions } from '../../storage';
-import { TransactionInfoProps, TransactionInfoType } from './types';
+import { createTransactions, TransactionInfoType } from '../../storage';
+import { TransactionInfoProps } from './types';
 import { generateDefaultTransaction } from './utils';
 
 const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {

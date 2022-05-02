@@ -5,9 +5,12 @@ import moment from 'moment';
 import _ from 'lodash';
 import uuid from 'react-native-uuid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { deleteTransactions, TRANSACTION_STORAGE_KEY } from './storage';
+import {
+  deleteTransactions,
+  TRANSACTION_ENTITY,
+  TransactionInfoType,
+} from './storage';
 import { Layout } from './styles';
-import { TransactionInfoType } from './pages/Transactions';
 
 const generatePastMockTransactions = (
   amount: number,
@@ -58,7 +61,7 @@ const MOCK_TRANSACTIONS: TransactionInfoType[] = _.sortBy(
 export const addMockTransactions = async () => {
   console.log(MOCK_TRANSACTIONS);
   await AsyncStorage.setItem(
-    TRANSACTION_STORAGE_KEY,
+    TRANSACTION_ENTITY.singular,
     JSON.stringify(MOCK_TRANSACTIONS),
   );
   return MOCK_TRANSACTIONS;
