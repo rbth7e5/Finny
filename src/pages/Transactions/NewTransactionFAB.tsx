@@ -19,6 +19,7 @@ import {
 import { TransactionInfoProps } from './types';
 import { generateDefaultTransaction } from './utils';
 import useEntitiesFromStorage from '../../storage/useEntitiesFromStorage';
+import { capitalize } from 'lodash';
 
 const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
   const [categories] = useEntitiesFromStorage<string>(readCategories);
@@ -51,14 +52,15 @@ const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
   );
   const onAdd = useCallback(async () => {
     if (isAmountValid && isCategoryValid) {
+      const capitalizedCategory = capitalize(category);
       const newTransaction: TransactionInfoType = {
         ...generateDefaultTransaction(),
         amount: +amount!,
-        category,
+        category: capitalizedCategory,
         description,
       };
-      if (!categories.includes(category!)) {
-        await createCategories(category!);
+      if (!categories.includes(capitalizedCategory)) {
+        await createCategories(capitalizedCategory);
       }
       await createTransactions(newTransaction);
       setTransactions(oldTransactions => [newTransaction, ...oldTransactions]);
