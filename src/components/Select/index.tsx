@@ -33,9 +33,20 @@ const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
       ),
     [options, text],
   );
-  const menuStyle = {
-    marginTop: -filteredOptions.length * 48,
-  };
+
+  const hasCustomOption = useMemo(() => !!text && text !== '', [text]);
+
+  const menuStyle = useMemo(() => {
+    const numOptions = hasCustomOption
+      ? filteredOptions.length + 1
+      : filteredOptions.length;
+    const menuItemHeight = 48;
+    const extraOffset = 8;
+    return {
+      marginTop: -numOptions * menuItemHeight - extraOffset,
+    };
+  }, [filteredOptions.length, hasCustomOption]);
+
   return (
     <Menu
       style={menuStyle}
@@ -45,16 +56,15 @@ const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
         <TextInput
           value={text}
           onChangeText={onChangeText}
-          onPressIn={() => setMenuVisible(!menuVisible)}
           onFocus={() => showMenu()}
           {...textInputProps}
         />
       }>
-      {!!text && text !== '' && (
+      {hasCustomOption && (
         <Menu.Item
           title={text}
           onPress={() => {
-            onSelect({ label: text, value: text });
+            onSelect({ label: text!, value: text! });
             onDismiss();
           }}
         />
