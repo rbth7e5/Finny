@@ -54,7 +54,7 @@ const Select = ({
     const extraOffset = 8;
     return {
       menuStyle: {
-        marginTop: -numOptionsDisplayed * menuItemHeight - extraOffset,
+        marginTop: -(numOptionsDisplayed + 0.5) * menuItemHeight - extraOffset,
       },
       scrollViewStyle: {
         height: (numOptionsDisplayed + 0.5) * menuItemHeight,
