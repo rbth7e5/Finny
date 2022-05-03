@@ -3,6 +3,7 @@ import { ReadFunctionType } from './utils';
 
 export default function useEntitiesFromStorage<T>(
   readEntities: ReadFunctionType<T>,
+  dependencies?: any[],
 ): [T[], Dispatch<SetStateAction<T[]>>, T[]] {
   const [initialEntities, setInitialEntities] = useState<T[]>([]);
   const [entities, setEntities] = useState<T[]>([]);
@@ -17,6 +18,6 @@ export default function useEntitiesFromStorage<T>(
     return () => {
       mounted = false;
     };
-  }, [readEntities]);
+  }, [readEntities, dependencies]);
   return [entities, setEntities, initialEntities];
 }

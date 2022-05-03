@@ -23,12 +23,14 @@ import { capitalize } from 'lodash';
 import Select from '../../components/Select';
 
 const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
-  const [categories] = useEntitiesFromStorage<string>(readCategories);
   const [transactionInfo, setTransactionInfo] =
     useState<TransactionInfoType | null>(null);
   const addNewTransaction = useCallback(() => {
     setTransactionInfo(generateDefaultTransaction());
   }, []);
+  const [categories] = useEntitiesFromStorage<string>(readCategories, [
+    transactionInfo,
+  ]);
 
   const [amount, setAmount] = useState<string | undefined>(
     transactionInfo?.amount ? String(transactionInfo?.amount) : undefined,
