@@ -20,6 +20,7 @@ import { TransactionInfoProps } from './types';
 import { generateDefaultTransaction } from './utils';
 import useEntitiesFromStorage from '../../storage/useEntitiesFromStorage';
 import { capitalize } from 'lodash';
+import Select from '../../components/Select';
 
 const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
   const [categories] = useEntitiesFromStorage<string>(readCategories);
@@ -98,12 +99,12 @@ const NewTransactionFAB = ({ setTransactions }: TransactionInfoProps) => {
                 value={amount}
                 onChangeText={value => setAmount(value)}
               />
-              <TextInput
+              <Select
                 left={<TextInput.Icon name="shape" />}
                 label="Category"
                 error={!isCategoryValid}
-                value={category}
-                onChangeText={value => setCategory(value)}
+                onSelect={option => setCategory(option.value)}
+                options={categories.map(c => ({ label: c, value: c }))}
               />
               <TextInput
                 left={<TextInput.Icon name="image-text" />}

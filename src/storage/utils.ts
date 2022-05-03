@@ -25,13 +25,13 @@ export function createCRUD<T>(
   const key = singular;
   const read = async (predicate?: (item: T) => boolean): Promise<T[]> => {
     try {
-      const existingTransactionsRaw = await AsyncStorage.getItem(key);
-      if (existingTransactionsRaw) {
-        const existingTransactions = JSON.parse(existingTransactionsRaw);
+      const existingEntitiesRaw = await AsyncStorage.getItem(key);
+      if (existingEntitiesRaw) {
+        const existingEntities = JSON.parse(existingEntitiesRaw);
         if (predicate) {
-          return existingTransactions.filter(predicate);
+          return existingEntities.filter(predicate);
         }
-        return existingTransactions;
+        return existingEntities;
       }
       return [];
     } catch (error) {
@@ -42,9 +42,13 @@ export function createCRUD<T>(
   const create = async (items: T | T[]) => {
     const elements: T[] = ([] as T[]).concat(items);
     try {
-      const existingTransactions = await read();
-      const updatedTransactions = [...elements, ...existingTransactions];
-      await AsyncStorage.setItem(key, JSON.stringify(updatedTransactions));
+      const existingEntities = await read();
+      const existingKeys = existingEntities.map(e => entityKey(e));
+      const deDupedElements = elements.filter(
+        e => !existingKeys.includes(entityKey(e)),
+      );
+      const updatedEntities = [...deDupedElements, ...existingEntities];
+      await AsyncStorage.setItem(key, JSON.stringify(updatedEntities));
     } catch (error) {
       throw new Error(
         `Failed to add ${elements.length > 1 ? plural : singular}`,
