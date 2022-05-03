@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Menu, TextInput } from 'react-native-paper';
+import { Menu, TextInput, useTheme } from 'react-native-paper';
 import { TextInputProps } from 'react-native-paper/lib/typescript/components/TextInput/TextInput';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Theme } from 'react-native-paper/lib/typescript/types';
 
 export type Option = {
   label: string;
@@ -9,8 +11,14 @@ export type Option = {
 export type SelectProps = {
   onSelect: (option: Option) => void;
   options: Option[];
+  maxOptionsDisplayed?: number;
 } & Omit<TextInputProps, 'theme'>;
-const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
+const Select = ({
+  options,
+  onSelect,
+  maxOptionsDisplayed = 4,
+  ...textInputProps
+}: SelectProps) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [text, setText] = useState<string>();
   const onChangeText = useCallback(
@@ -36,16 +44,24 @@ const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
 
   const hasCustomOption = useMemo(() => !!text && text !== '', [text]);
 
-  const menuStyle = useMemo(() => {
+  const { menuStyle, scrollViewStyle } = useMemo(() => {
     const numOptions = hasCustomOption
       ? filteredOptions.length + 1
       : filteredOptions.length;
+    const numOptionsDisplayed =
+      maxOptionsDisplayed > numOptions ? numOptions : maxOptionsDisplayed;
     const menuItemHeight = 48;
     const extraOffset = 8;
     return {
-      marginTop: -numOptions * menuItemHeight - extraOffset,
+      menuStyle: {
+        marginTop: -numOptionsDisplayed * menuItemHeight - extraOffset,
+      },
+      scrollViewStyle: {
+        height: (numOptionsDisplayed + 0.5) * menuItemHeight,
+      },
     };
-  }, [filteredOptions.length, hasCustomOption]);
+  }, [filteredOptions.length, hasCustomOption, maxOptionsDisplayed]);
+  const styles = makeStyles(useTheme());
 
   return (
     <Menu
@@ -60,28 +76,38 @@ const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
           {...textInputProps}
         />
       }>
-      {hasCustomOption && (
-        <Menu.Item
-          title={text}
-          onPress={() => {
-            onSelect({ label: text!, value: text! });
-            onDismiss();
-          }}
-        />
-      )}
-      {filteredOptions.map(option => (
-        <Menu.Item
-          key={option.value}
-          title={option.label}
-          onPress={() => {
-            setText(option.label);
-            onSelect(option);
-            onDismiss();
-          }}
-        />
-      ))}
+      <ScrollView style={scrollViewStyle}>
+        {hasCustomOption && (
+          <Menu.Item
+            style={styles.customMenuItem}
+            title={text}
+            onPress={() => {
+              onSelect({ label: text!, value: text! });
+              onDismiss();
+            }}
+          />
+        )}
+        {filteredOptions.map(option => (
+          <Menu.Item
+            key={option.value}
+            title={option.label}
+            onPress={() => {
+              setText(option.label);
+              onSelect(option);
+              onDismiss();
+            }}
+          />
+        ))}
+      </ScrollView>
     </Menu>
   );
 };
+
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    customMenuItem: {
+      backgroundColor: theme.colors.accent,
+    },
+  });
 
 export default Select;
