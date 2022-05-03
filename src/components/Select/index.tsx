@@ -55,8 +55,6 @@ const Select = ({
     return {
       menuStyle: {
         marginTop: -numOptionsDisplayed * menuItemHeight - extraOffset,
-        left: 32,
-        right: 32,
       },
       scrollViewStyle: {
         height: numOptionsDisplayed * menuItemHeight,
