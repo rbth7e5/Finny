@@ -49,15 +49,17 @@ const Select = ({
       ? filteredOptions.length + 1
       : filteredOptions.length;
     const numOptionsDisplayed =
-      maxOptionsDisplayed > numOptions ? numOptions : maxOptionsDisplayed;
+      maxOptionsDisplayed > numOptions ? numOptions : maxOptionsDisplayed + 0.5;
     const menuItemHeight = 48;
     const extraOffset = 8;
     return {
       menuStyle: {
-        marginTop: -(numOptionsDisplayed + 0.5) * menuItemHeight - extraOffset,
+        marginTop: -numOptionsDisplayed * menuItemHeight - extraOffset,
+        left: 32,
+        right: 32,
       },
       scrollViewStyle: {
-        height: (numOptionsDisplayed + 0.5) * menuItemHeight,
+        height: numOptionsDisplayed * menuItemHeight,
       },
     };
   }, [filteredOptions.length, hasCustomOption, maxOptionsDisplayed]);
