@@ -45,6 +45,7 @@ const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
         <TextInput
           value={text}
           onChangeText={onChangeText}
+          onPressIn={() => setMenuVisible(!menuVisible)}
           onFocus={() => showMenu()}
           {...textInputProps}
         />
@@ -63,6 +64,7 @@ const Select = ({ options, onSelect, ...textInputProps }: SelectProps) => {
           key={option.value}
           title={option.label}
           onPress={() => {
+            setText(option.label);
             onSelect(option);
             onDismiss();
           }}
