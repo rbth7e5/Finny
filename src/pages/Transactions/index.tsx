@@ -1,34 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { SectionList, StyleSheet, View } from 'react-native';
-import { Caption, Text, useTheme } from 'react-native-paper';
+import React, { useState } from 'react';
 
 import PageWrapper from '../PageWrapper';
-import Transaction from './Transaction';
 import ActionBar from './ActionBar';
 import NewTransactionFAB from './NewTransactionFAB';
+import TransactionList from './TransactionList';
 
 import useEntitiesFromStorage from '../../storage/useEntitiesFromStorage';
 
-import { Layout } from '../../styles';
-import { groupTransactionsBy } from './utils';
 import { GroupBy } from './types';
-import { Theme } from 'react-native-paper/lib/typescript/types';
 import { readTransactions, TransactionInfoType } from '../../storage';
 
 const Transactions = () => {
-  const theme = useTheme();
-  const styles = makeStyles(theme);
   const [transactions, setTransactions, initialTransactions] =
     useEntitiesFromStorage<TransactionInfoType>(readTransactions);
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
-
-  const sections = useMemo(() => {
-    const transactionsBy = groupTransactionsBy(transactions, groupBy);
-    return Object.entries(transactionsBy).map(([week, transactionsInWeek]) => ({
-      title: week,
-      data: transactionsInWeek,
-    }));
-  }, [groupBy, transactions]);
 
   return (
     <PageWrapper>
@@ -38,42 +23,11 @@ const Transactions = () => {
         initialTransactions={initialTransactions}
         setTransactions={setTransactions}
       />
-      {transactions.length > 0 ? (
-        <SectionList
-          style={styles.listContainer}
-          sections={sections}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <Transaction transactionInfo={item} groupBy={groupBy} />
-          )}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.sectionHeader}>{title}</Text>
-          )}
-        />
-      ) : (
-        <View style={styles.emptyView}>
-          <Caption>No Transactions</Caption>
-        </View>
-      )}
+      <TransactionList transactions={transactions} groupBy={groupBy} />
       <NewTransactionFAB setTransactions={setTransactions} />
     </PageWrapper>
   );
 };
-
-const makeStyles = (theme: Theme) =>
-  StyleSheet.create({
-    listContainer: {
-      ...Layout.sidePadded,
-    },
-    emptyView: {
-      height: '100%',
-      ...Layout.flexColumn({ justifyContent: 'center', alignItems: 'center' }),
-    },
-    sectionHeader: {
-      backgroundColor: theme.colors.background,
-      ...Layout.verticalPaddedSmall,
-    },
-  });
 
 export default Transactions;
 export * from './types';
