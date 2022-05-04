@@ -24,25 +24,21 @@ const TransactionList = ({ transactions, groupBy }: TransactionListProps) => {
     }));
   }, [groupBy, transactions]);
 
-  return (
-    <View>
-      {transactions.length > 0 ? (
-        <SectionList
-          style={styles.listContainer}
-          sections={sections}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <Transaction transactionInfo={item} groupBy={groupBy} />
-          )}
-          renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.sectionHeader}>{title}</Text>
-          )}
-        />
-      ) : (
-        <View style={styles.emptyView}>
-          <Caption>No Transactions</Caption>
-        </View>
+  return transactions.length > 0 ? (
+    <SectionList
+      style={styles.listContainer}
+      sections={sections}
+      keyExtractor={item => item.id}
+      renderItem={({ item }) => (
+        <Transaction transactionInfo={item} groupBy={groupBy} />
       )}
+      renderSectionHeader={({ section: { title } }) => (
+        <Text style={styles.sectionHeader}>{title}</Text>
+      )}
+    />
+  ) : (
+    <View style={styles.emptyView}>
+      <Caption>No Transactions</Caption>
     </View>
   );
 };
