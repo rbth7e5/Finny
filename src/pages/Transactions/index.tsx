@@ -11,17 +11,16 @@ import { GroupBy } from './types';
 import { readTransactions, TransactionInfoType } from '../../storage';
 
 const Transactions = () => {
-  const [transactions, setTransactions, initialTransactions] =
+  const [transactions, setTransactions] =
     useEntitiesFromStorage<TransactionInfoType>(readTransactions);
   const [groupBy, setGroupBy] = useState<GroupBy>('day');
 
   return (
     <PageWrapper>
       <ActionBar
+        transactions={transactions}
         groupBy={groupBy}
-        setGroupBy={setGroupBy}
-        initialTransactions={initialTransactions}
-        setTransactions={setTransactions}
+        onChangeGroupBy={(by: GroupBy) => setGroupBy(by)}
       />
       <TransactionList transactions={transactions} groupBy={groupBy} />
       <NewTransactionFAB setTransactions={setTransactions} />

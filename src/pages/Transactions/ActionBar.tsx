@@ -1,78 +1,104 @@
-import React, { Dispatch, SetStateAction, useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { MockButtons } from '../../mock';
-import { IconButton, Searchbar, ToggleButton } from 'react-native-paper';
+import {
+  IconButton,
+  Searchbar,
+  ToggleButton,
+  useTheme,
+} from 'react-native-paper';
 import { StyleSheet, View } from 'react-native';
 import { Layout } from '../../styles';
 import { GroupBy } from './types';
 import { searchTransactions } from './utils';
 import { TransactionInfoType } from '../../storage';
+import TransactionList from './TransactionList';
+import { Theme } from 'react-native-paper/lib/typescript/types';
 
 export type ActionBarProps = {
+  transactions: TransactionInfoType[];
   groupBy: GroupBy;
-  setGroupBy: Dispatch<SetStateAction<GroupBy>>;
-  initialTransactions: TransactionInfoType[];
-  setTransactions: Dispatch<SetStateAction<TransactionInfoType[]>>;
+  onChangeGroupBy: (by: GroupBy) => void;
 };
 
 const ActionBar = ({
+  transactions,
   groupBy,
-  setGroupBy,
-  initialTransactions,
-  setTransactions,
+  onChangeGroupBy,
 }: ActionBarProps) => {
+  const styles = makeStyles(useTheme());
+  const [filteredTransactions, setFilteredTransactions] = useState<
+    TransactionInfoType[]
+  >([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
   const onChangeSearch = useCallback(
     (query: string) => {
-      const filteredTransactions = searchTransactions(
-        initialTransactions,
-        query,
-      );
-      setTransactions(filteredTransactions);
+      const newFilteredTransactions = searchTransactions(transactions, query);
+      setFilteredTransactions(newFilteredTransactions);
       setSearchQuery(query);
     },
-    [initialTransactions, setTransactions],
+    [transactions],
   );
-  const onHideSearch = useCallback(() => {
-    setTransactions(initialTransactions);
-    setShowSearch(false);
-  }, [initialTransactions, setTransactions]);
+  const onHideSearch = useCallback(() => setShowSearch(false), []);
   const onShowSearch = useCallback(() => setShowSearch(true), []);
 
   return (
-    <View style={styles.floatingActions}>
+    <>
+      <View style={styles.floatingActions}>
+        {showSearch && (
+          <Searchbar
+            autoFocus
+            icon="chevron-left"
+            placeholder="Search Transactions"
+            value={searchQuery}
+            onChangeText={onChangeSearch}
+            onIconPress={onHideSearch}
+          />
+        )}
+        <IconButton onPress={onShowSearch} icon="magnify" />
+        <MockButtons />
+        <ToggleButton.Row
+          onValueChange={value =>
+            onChangeGroupBy(value as 'day' | 'week' | 'month')
+          }
+          value={groupBy}>
+          <ToggleButton icon="calendar-today" value="day" />
+          <ToggleButton icon="calendar-range" value="week" />
+          <ToggleButton icon="calendar-month" value="month" />
+        </ToggleButton.Row>
+      </View>
       {showSearch && (
-        <Searchbar
-          autoFocus
-          icon="chevron-left"
-          placeholder="Search Transactions"
-          value={searchQuery}
-          onChangeText={onChangeSearch}
-          onIconPress={onHideSearch}
-        />
+        <View style={styles.filteredList}>
+          <TransactionList
+            transactions={filteredTransactions}
+            groupBy={groupBy}
+          />
+        </View>
       )}
-      <IconButton onPress={onShowSearch} icon="magnify" />
-      <MockButtons setTransactions={setTransactions} />
-      <ToggleButton.Row
-        onValueChange={value => setGroupBy(value as 'day' | 'week' | 'month')}
-        value={groupBy}>
-        <ToggleButton icon="calendar-today" value="day" />
-        <ToggleButton icon="calendar-range" value="week" />
-        <ToggleButton icon="calendar-month" value="month" />
-      </ToggleButton.Row>
-    </View>
+    </>
   );
 };
 
-const styles = StyleSheet.create({
-  floatingActions: {
-    ...Layout.flexRow({
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    }),
-    ...Layout.sidePadded,
-  },
-});
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    floatingActions: {
+      ...Layout.flexRow({
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }),
+      ...Layout.sidePadded,
+    },
+    filteredList: {
+      ...Layout.floating({
+        top: 48,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      }),
+      backgroundColor: theme.colors.background,
+      zIndex: 999,
+    },
+  });
 
 export default ActionBar;

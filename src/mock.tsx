@@ -74,25 +74,17 @@ export const addMockTransactions = async () => {
   return MOCK_TRANSACTIONS;
 };
 
-export const MockButtons = ({
-  setTransactions,
-}: {
-  setTransactions: Dispatch<SetStateAction<TransactionInfoType[]>>;
-}) => (
+export const MockButtons = () => (
   <View
     style={Layout.flexRow({
       justifyContent: 'space-between',
       alignItems: 'center',
     })}>
-    <IconButton
-      icon="file"
-      onPress={async () => setTransactions(await addMockTransactions())}
-    />
+    <IconButton icon="file" onPress={async () => await addMockTransactions()} />
     <IconButton
       icon="delete"
       onPress={async () => {
         await deleteTransactions();
-        setTransactions([]);
       }}
     />
   </View>
