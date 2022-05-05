@@ -97,7 +97,7 @@ const makeStyles = (theme: Theme) =>
         bottom: 0,
       }),
       backgroundColor: theme.colors.background,
-      zIndex: 999,
+      zIndex: 1,
     },
   });
 
