@@ -50,7 +50,7 @@ const ActionBar = ({
           <Searchbar
             autoFocus
             icon="chevron-left"
-            placeholder="Search Transactions"
+            placeholder="Search category, description..."
             value={searchQuery}
             onChangeText={onChangeSearch}
             onIconPress={onHideSearch}
