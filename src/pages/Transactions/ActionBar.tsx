@@ -1,5 +1,4 @@
 import React, { useCallback, useState } from 'react';
-import { MockButtons } from '../../mock';
 import {
   IconButton,
   Searchbar,
@@ -57,7 +56,6 @@ const ActionBar = ({
           />
         )}
         <IconButton onPress={onShowSearch} icon="magnify" />
-        <MockButtons />
         <ToggleButton.Row
           onValueChange={value =>
             onChangeGroupBy(value as 'day' | 'week' | 'month')
