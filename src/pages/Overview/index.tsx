@@ -1,14 +1,11 @@
 import React from 'react';
-import { Text } from 'react-native-paper';
 import PageWrapper from '../PageWrapper';
-import { View } from 'react-native';
+import WidgetList from './WidgetList';
 
 const Overview = () => {
   return (
     <PageWrapper>
-      <View>
-        <Text>Hello, Welcome to your overview!</Text>
-      </View>
+      <WidgetList />
     </PageWrapper>
   );
 };
