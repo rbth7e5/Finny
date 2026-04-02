@@ -77,6 +77,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` + ordering (see TKT-014); `inferMonthKey` + `getMonthlyStatus` (ER §11) |
 | **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps: deeper parser edge cases, golden outputs (TKT-020) |
 | **TKT-014** | `reconcile/reviewExplain.test.ts`, `appServices/monthlyClose.test.ts` | Review reason codes (`NO_COUNTERPART_IN_WINDOW`, `DATE_OUTSIDE_MATCH_WINDOW`, `LOW_CONFIDENCE`, `AMBIGUOUS_CANDIDATES`, `CARD_CREDIT_UNMATCHED`); markers + import file; stable review queue sort |
+| **TKT-015** | `appServices/ledgerView.test.ts` | `filterLedgerTransactions` (source / needs review / settlement-only); `buildLedgerDetailModel` (import trace, link peer, review vs reconciled copy) |
 | **TKT-019** | `appServices/finnyApp.test.ts`, `appServices/finnyApp.integration.test.ts` | Import → reconcile (incl. DBS auto-match chain), re-import txn dedupe, monthly status → `resolveReviewItem` → `VIEW_SUMMARY`; **no** SQLite / IPC round-trip (TKT-025) |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
 
@@ -262,10 +263,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-011
 
 ### TKT-015 - Ledger + detail explainability view
+- **Status:** DONE
 - **Priority:** P1
 - **Type:** Frontend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); same stack expectations as TKT-013 (extracted logic in Vitest where possible).
 - **Description:** Add ledger filters and detail drawer/page with source trace and reconciliation explanation contract.
+- **Unit tests:** `appServices/ledgerView.test.ts`; UI in `App.tsx` (ledger tab: filters, table + sticky detail panel); reuses `reviewItemDetailLines` for `NeedsReview` rows.
 - **Acceptance criteria:**
   - Filter by account/source, needs review, settlement-related.
   - Transaction detail shows source import + reasoning payload.

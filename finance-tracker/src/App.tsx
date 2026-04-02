@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  buildLedgerDetailModel,
+  DEFAULT_LEDGER_FILTERS,
+  filterLedgerTransactions,
+  LEDGER_SOURCE_LABELS,
+  LEDGER_SOURCE_OPTIONS,
+  type LedgerSourceFilter,
+} from './appServices/ledgerView'
+import {
   importPdfStatements,
   resolveReviewItem,
   updateRuleProfile,
@@ -20,6 +28,11 @@ function App() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [persistenceError, setPersistenceError] = useState<string | null>(null)
 
+  const [ledgerSources, setLedgerSources] = useState<LedgerSourceFilter[]>(() => [...LEDGER_SOURCE_OPTIONS])
+  const [ledgerNeedsReviewOnly, setLedgerNeedsReviewOnly] = useState(false)
+  const [ledgerSettlementOnly, setLedgerSettlementOnly] = useState(false)
+  const [ledgerSelectedId, setLedgerSelectedId] = useState<string | null>(null)
+
   useEffect(() => {
     void storage
       .load()
@@ -36,6 +49,43 @@ function App() {
 
   const monthlyClose = useMemo(() => getMonthlyCloseSummary(state ?? DEFAULT_STATE), [state])
   const monthlyStatus = useMemo(() => getMonthlyStatus(state ?? DEFAULT_STATE), [state])
+
+  const ledgerCriteria = useMemo(() => {
+    const allSelected =
+      ledgerSources.length === LEDGER_SOURCE_OPTIONS.length &&
+      LEDGER_SOURCE_OPTIONS.every((s) => ledgerSources.includes(s))
+    return {
+      ...DEFAULT_LEDGER_FILTERS,
+      sourceTypes: allSelected ? ('all' as const) : ledgerSources,
+      needsReviewOnly: ledgerNeedsReviewOnly,
+      settlementRowsOnly: ledgerSettlementOnly,
+    }
+  }, [ledgerSources, ledgerNeedsReviewOnly, ledgerSettlementOnly])
+
+  const ledgerRows = useMemo(
+    () => filterLedgerTransactions(state?.transactions ?? [], ledgerCriteria),
+    [state?.transactions, ledgerCriteria],
+  )
+
+  const ledgerDetail = useMemo(() => {
+    if (!state || !ledgerSelectedId) return null
+    const t = state.transactions.find((x) => x.id === ledgerSelectedId)
+    if (!t) return null
+    return buildLedgerDetailModel(t, state)
+  }, [state, ledgerSelectedId])
+
+  useEffect(() => {
+    if (!ledgerSelectedId) return
+    if (!ledgerRows.some((t) => t.id === ledgerSelectedId)) setLedgerSelectedId(null)
+  }, [ledgerRows, ledgerSelectedId])
+
+  function toggleLedgerSource(st: LedgerSourceFilter) {
+    setLedgerSources((prev) => {
+      const next = prev.includes(st) ? prev.filter((x) => x !== st) : [...prev, st]
+      if (next.length === 0) return [...LEDGER_SOURCE_OPTIONS]
+      return next
+    })
+  }
 
   /** Applies state optimistically, persists, then rolls back UI if save fails. */
   async function patchState(next: AppState): Promise<boolean> {
@@ -296,26 +346,122 @@ function App() {
       {tab === 'ledger' && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-lg font-medium">Ledger</h2>
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Kind</th>
-                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Amount</th>
-                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Status</th>
-                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Spend impact</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.transactions.map((t) => (
-                <tr key={t.id}>
-                  <td className="border-b border-slate-200 px-2 py-2">{t.kind}</td>
-                  <td className="border-b border-slate-200 px-2 py-2">{t.amount.toFixed(2)}</td>
-                  <td className="border-b border-slate-200 px-2 py-2">{t.reconciliationState}</td>
-                  <td className="border-b border-slate-200 px-2 py-2">{t.spendImpact}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mb-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div>
+              <p className="mb-2 font-medium text-slate-800">Source</p>
+              <div className="flex flex-wrap gap-3">
+                {LEDGER_SOURCE_OPTIONS.map((st) => (
+                  <label key={st} className="flex cursor-pointer items-center gap-1.5 text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={ledgerSources.includes(st)}
+                      onChange={() => toggleLedgerSource(st)}
+                      className="rounded border-slate-300"
+                    />
+                    {LEDGER_SOURCE_LABELS[st]}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex cursor-pointer items-center gap-2 text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={ledgerNeedsReviewOnly}
+                  onChange={(e) => setLedgerNeedsReviewOnly(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                Needs review only
+              </label>
+              <label className="flex cursor-pointer items-center gap-2 text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={ledgerSettlementOnly}
+                  onChange={(e) => setLedgerSettlementOnly(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                Settlement rows only (bank bill pay + card credits)
+              </label>
+            </div>
+            <p className="text-xs text-slate-500">
+              Showing {ledgerRows.length} of {state.transactions.length} row(s). Select a row for import source and
+              reconciliation detail.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+            <div className="min-w-0 flex-1 overflow-x-auto">
+              <table className="w-full min-w-[36rem] border-collapse text-sm">
+                <thead>
+                  <tr>
+                    <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Date</th>
+                    <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Source</th>
+                    <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Kind</th>
+                    <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Amount</th>
+                    <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Status</th>
+                    <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Spend</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledgerRows.map((t) => (
+                    <tr
+                      key={t.id}
+                      className={`cursor-pointer border-b border-slate-100 hover:bg-slate-50 ${
+                        ledgerSelectedId === t.id ? 'bg-blue-50' : ''
+                      }`}
+                      onClick={() => setLedgerSelectedId(t.id)}
+                    >
+                      <td className="px-2 py-2 whitespace-nowrap text-slate-700">{t.date}</td>
+                      <td className="px-2 py-2 text-slate-600">{t.sourceType}</td>
+                      <td className="px-2 py-2">{t.kind}</td>
+                      <td className="px-2 py-2">{t.amount.toFixed(2)}</td>
+                      <td className="px-2 py-2">{t.reconciliationState}</td>
+                      <td className="px-2 py-2">{t.spendImpact}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {ledgerRows.length === 0 && (
+                <p className="mt-2 text-sm text-slate-600">No rows match the current filters.</p>
+              )}
+            </div>
+            <aside className="w-full shrink-0 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm lg:max-w-md lg:sticky lg:top-4 lg:self-start">
+              <h3 className="mb-2 font-medium text-slate-900">Detail</h3>
+              {!ledgerDetail ? (
+                <p className="text-slate-600">Select a row to see the source import and reconciliation explanation.</p>
+              ) : (
+                <div className="space-y-2 text-slate-700">
+                  <p>
+                    <span className="font-medium text-slate-900">{ledgerDetail.transaction.description}</span>
+                    <span className="text-slate-600"> — {ledgerDetail.transaction.amount.toFixed(2)}</span>
+                  </p>
+                  <ul className="list-inside list-disc space-y-0.5 text-xs text-slate-600">
+                    <li>Date: {ledgerDetail.transaction.date}</li>
+                    <li>Source: {ledgerDetail.transaction.sourceType}</li>
+                    <li>Kind: {ledgerDetail.transaction.kind}</li>
+                    <li>Import file: {ledgerDetail.sourceFile ?? '—'}</li>
+                    <li>Import status: {ledgerDetail.importStatus ?? '—'}</li>
+                    {ledgerDetail.importWarning && <li className="text-amber-800">Warning: {ledgerDetail.importWarning}</li>}
+                    {ledgerDetail.transaction.reference && <li>Reference: {ledgerDetail.transaction.reference}</li>}
+                  </ul>
+                  {ledgerDetail.linkedPeerSummary && (
+                    <p className="rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
+                      {ledgerDetail.linkedPeerSummary}
+                    </p>
+                  )}
+                  <div className="border-t border-slate-200 pt-2">
+                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Reconciliation
+                    </p>
+                    <ul className="space-y-1 text-xs text-slate-700">
+                      {ledgerDetail.reasoningLines.map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
         </section>
       )}
 
