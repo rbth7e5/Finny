@@ -3,6 +3,7 @@ import {
   buildLedgerDetailModel,
   DEFAULT_LEDGER_FILTERS,
   filterLedgerTransactions,
+  ledgerBankSettlementCanReopenForReview,
   LEDGER_SOURCE_LABELS,
   LEDGER_SOURCE_OPTIONS,
   type LedgerSourceFilter,
@@ -16,6 +17,7 @@ import {
   confirmSettlementPair,
   importPdfStatements,
   listSettlementCardCandidates,
+  reopenSettlementForReview,
   resolveReviewItem,
   updateRuleProfile,
 } from './appServices/finnyApp'
@@ -165,6 +167,28 @@ function App() {
         return next
       })
       setMessage('')
+    }
+  }
+
+  /** TKT-027: Ledger path to fix AutoMatched / UserConfirmed settlement links. */
+  async function onLedgerReopenSettlementForReview(bankId: string) {
+    if (!state) return
+    const r = reopenSettlementForReview(state, bankId)
+    if (!r.ok) {
+      setMessage(r.reason)
+      return
+    }
+    const saved = await patchState(r.next)
+    if (saved) {
+      setPairingSelection((prev) => {
+        const next = { ...prev }
+        delete next[bankId]
+        return next
+      })
+      setTab('review')
+      setMessage(
+        'Review tab opened — pick another card line, confirm pairing, or mark as not a settlement. Re-importing may auto-match this line again if the engine still finds a strong candidate.',
+      )
     }
   }
 
@@ -582,6 +606,25 @@ function App() {
                     <p className="rounded border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700">
                       {ledgerDetail.linkedPeerSummary}
                     </p>
+                  )}
+                  {ledgerBankSettlementCanReopenForReview(ledgerDetail.transaction) && (
+                    <div className="rounded-md border border-blue-200 bg-blue-50/80 p-3">
+                      <p className="mb-2 text-xs text-slate-700">
+                        Wrong match? <strong>Change pairing</strong> (send to Review) unlinks this bank line and its card
+                        payment so you can pick another candidate or mark the bank line as not paying the card — aligned
+                        with Review actions: confirm, pick another candidate, or override.
+                      </p>
+                      <button
+                        type="button"
+                        className="w-full rounded-md border border-blue-400 bg-blue-600 px-3 py-2 text-left text-sm font-medium text-white hover:bg-blue-700 sm:w-auto"
+                        onClick={() => void onLedgerReopenSettlementForReview(ledgerDetail.transaction.id)}
+                      >
+                        Change pairing — send to Review
+                        <span className="mt-0.5 block text-xs font-normal text-blue-100">
+                          Opens Review tab with both lines unlinked
+                        </span>
+                      </button>
+                    </div>
                   )}
                   <div className="border-t border-slate-200 pt-2">
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">

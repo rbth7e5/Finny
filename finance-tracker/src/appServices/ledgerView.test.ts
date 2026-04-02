@@ -4,6 +4,7 @@ import {
   buildLedgerDetailModel,
   DEFAULT_LEDGER_FILTERS,
   filterLedgerTransactions,
+  ledgerBankSettlementCanReopenForReview,
   LEDGER_SOURCE_OPTIONS,
   type LedgerSourceFilter,
 } from './ledgerView'
@@ -76,6 +77,65 @@ describe('filterLedgerTransactions (TKT-015)', () => {
 describe('LEDGER_SOURCE_OPTIONS', () => {
   it('lists four statement sources for filters', () => {
     expect(LEDGER_SOURCE_OPTIONS).toEqual(['UOB_BANK', 'DBS_BANK', 'UOB_CARD', 'DBS_CARD'])
+  })
+})
+
+describe('ledgerBankSettlementCanReopenForReview (TKT-027)', () => {
+  it('is true for linked AutoMatched or UserConfirmed bank settlement', () => {
+    expect(
+      ledgerBankSettlementCanReopenForReview(
+        txn({
+          id: 'b',
+          kind: 'BANK_SETTLEMENT',
+          amount: 1,
+          linkedTransactionId: 'c',
+          reconciliationState: 'AutoMatched',
+        }),
+      ),
+    ).toBe(true)
+    expect(
+      ledgerBankSettlementCanReopenForReview(
+        txn({
+          id: 'b',
+          kind: 'BANK_SETTLEMENT',
+          amount: 1,
+          linkedTransactionId: 'c',
+          reconciliationState: 'UserConfirmed',
+          spendImpact: 'SETTLEMENT_EXCLUDED',
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('is false without link, wrong kind, or non-matched state', () => {
+    expect(
+      ledgerBankSettlementCanReopenForReview(
+        txn({ id: 'b', kind: 'BANK_SETTLEMENT', amount: 1, reconciliationState: 'AutoMatched' }),
+      ),
+    ).toBe(false)
+    expect(
+      ledgerBankSettlementCanReopenForReview(
+        txn({
+          id: 'b',
+          kind: 'BANK_SETTLEMENT',
+          amount: 1,
+          linkedTransactionId: 'c',
+          reconciliationState: 'NeedsReview',
+          spendImpact: 'UNRESOLVED_REVIEW',
+        }),
+      ),
+    ).toBe(false)
+    expect(
+      ledgerBankSettlementCanReopenForReview(
+        txn({
+          id: 'x',
+          kind: 'CARD_CREDIT',
+          amount: 1,
+          linkedTransactionId: 'b',
+          reconciliationState: 'AutoMatched',
+        }),
+      ),
+    ).toBe(false)
   })
 })
 

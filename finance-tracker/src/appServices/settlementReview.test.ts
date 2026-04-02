@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { EMPTY_STATE_PROFILE } from '../test/fixtures/statements'
-import { confirmSettlementPair, listSettlementCardCandidates } from './settlementReview'
+import {
+  confirmSettlementPair,
+  listSettlementCardCandidates,
+  reopenSettlementForReview,
+} from './settlementReview'
 
 const profile = { ...EMPTY_STATE_PROFILE }
 
@@ -110,5 +114,108 @@ describe('confirmSettlementPair (TKT-026)', () => {
     expect(o1.reconciliationState).toBe('NeedsReview')
     expect(o2.linkedTransactionId).toBe('b1')
     expect(o2.reconciliationState).toBe('UserConfirmed')
+  })
+})
+
+describe('reopenSettlementForReview (TKT-027)', () => {
+  it('unlinks AutoMatched bank and card and sets both to NeedsReview', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 100,
+      reference: 'R1',
+      linkedTransactionId: 'c1',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const c = card({
+      id: 'c1',
+      amount: 100,
+      reference: 'R1',
+      linkedTransactionId: 'b1',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const state = { imports: [], transactions: [b, c], profile }
+    const r = reopenSettlementForReview(state, 'b1')
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const b2 = r.next.transactions.find((t) => t.id === 'b1')!
+    const c2 = r.next.transactions.find((t) => t.id === 'c1')!
+    expect(b2.linkedTransactionId).toBeUndefined()
+    expect(c2.linkedTransactionId).toBeUndefined()
+    expect(b2.reconciliationState).toBe('NeedsReview')
+    expect(c2.reconciliationState).toBe('NeedsReview')
+    expect(b2.spendImpact).toBe('UNRESOLVED_REVIEW')
+    expect(c2.spendImpact).toBe('UNRESOLVED_REVIEW')
+  })
+
+  it('allows UserConfirmed linked pair', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 50,
+      reference: 'R1',
+      linkedTransactionId: 'c1',
+      reconciliationState: 'UserConfirmed',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const c = card({
+      id: 'c1',
+      amount: 50,
+      reference: 'R1',
+      linkedTransactionId: 'b1',
+      reconciliationState: 'UserConfirmed',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const state = { imports: [], transactions: [b, c], profile }
+    const r = reopenSettlementForReview(state, 'b1')
+    expect(r.ok).toBe(true)
+  })
+
+  it('rejects unlinked bank', () => {
+    const b = bank({ id: 'b1', amount: 100 })
+    const state = { imports: [], transactions: [b], profile }
+    const r = reopenSettlementForReview(state, 'b1')
+    expect(r.ok).toBe(false)
+  })
+
+  it('rejects NeedsReview bank even if spurious link id present', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 100,
+      linkedTransactionId: 'c1',
+      reconciliationState: 'NeedsReview',
+    })
+    const state = { imports: [], transactions: [b], profile }
+    const r = reopenSettlementForReview(state, 'b1')
+    expect(r.ok).toBe(false)
+  })
+
+  it('after reopen, confirmSettlementPair can attach a new card', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 100,
+      reference: 'R1',
+      linkedTransactionId: 'c1',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const c1 = card({
+      id: 'c1',
+      amount: 100,
+      reference: 'R1',
+      linkedTransactionId: 'b1',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const c2 = card({ id: 'c2', amount: 100, reference: 'R1' })
+    const s0 = { imports: [], transactions: [b, c1, c2], profile }
+    const r1 = reopenSettlementForReview(s0, 'b1')
+    expect(r1.ok).toBe(true)
+    if (!r1.ok) return
+    const r2 = confirmSettlementPair(r1.next, 'b1', 'c2')
+    expect(r2.ok).toBe(true)
+    if (!r2.ok) return
+    expect(r2.next.transactions.find((t) => t.id === 'b1')!.linkedTransactionId).toBe('c2')
+    expect(r2.next.transactions.find((t) => t.id === 'c2')!.linkedTransactionId).toBe('b1')
   })
 })

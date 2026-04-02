@@ -67,3 +67,50 @@ export function confirmSettlementPair(
 
   return { ok: true, next: { ...state, transactions } }
 }
+
+/**
+ * Unlink a bank settlement that was AutoMatched or UserConfirmed so it returns to the Review queue
+ * with its former card partner (bidirectional). Use from Ledger when the user fixes a wrong link.
+ */
+export function reopenSettlementForReview(
+  state: AppState,
+  bankId: string,
+): { ok: true; next: AppState } | { ok: false; reason: string } {
+  const byId = new Map(state.transactions.map((t) => [t.id, t]))
+  const bank = byId.get(bankId)
+  if (!bank || bank.kind !== 'BANK_SETTLEMENT') {
+    return { ok: false, reason: 'Not a bank settlement row.' }
+  }
+  if (!bank.linkedTransactionId) {
+    return { ok: false, reason: 'This line is not linked yet — use the Review tab to pair it.' }
+  }
+  if (bank.reconciliationState !== 'AutoMatched' && bank.reconciliationState !== 'UserConfirmed') {
+    return {
+      ok: false,
+      reason: 'Only matched or confirmed settlements can be reopened from the ledger.',
+    }
+  }
+
+  const partnerId = bank.linkedTransactionId
+  const transactions = state.transactions.map((t) => {
+    if (t.id === bankId) {
+      return {
+        ...t,
+        linkedTransactionId: undefined,
+        reconciliationState: 'NeedsReview' as const,
+        spendImpact: 'UNRESOLVED_REVIEW' as const,
+      }
+    }
+    if (t.id === partnerId) {
+      return {
+        ...t,
+        linkedTransactionId: undefined,
+        reconciliationState: 'NeedsReview' as const,
+        spendImpact: 'UNRESOLVED_REVIEW' as const,
+      }
+    }
+    return t
+  })
+
+  return { ok: true, next: { ...state, transactions } }
+}

@@ -83,6 +83,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
 | **TKT-016** | `reconcile/settlementCandidates.test.ts`, `reconcile/reconcile.test.ts`, `reconcile/reviewExplain.test.ts`, `appServices/finnyApp.test.ts` | `sameIssuerCardMatchingOnly` scopes settlement candidates; SQLite `rule_profile` column; Settings UI |
 | **TKT-026** | `appServices/settlementReview.test.ts` | `listSettlementCardCandidates`, `confirmSettlementPair` (link + remap); `matchBankAgainstCards` includes card already linked to same bank; Review tab pairing UI in `App.tsx` |
+| **TKT-027** | `appServices/settlementReview.test.ts`, `appServices/ledgerView.test.ts` | `reopenSettlementForReview` (unlink + `NeedsReview` both sides); `ledgerBankSettlementCanReopenForReview`; Ledger detail action in `App.tsx` → Review tab |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
 
@@ -286,6 +287,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Follow-up:** **TKT-027** — entry point to correct wrong **auto** matches that never appear in Review.
 
 ### TKT-027 - Reopen or remap AutoMatched settlements (Ledger entry)
+- **Status:** DONE
 - **Priority:** P2
 - **Type:** Frontend / Application services
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); Vitest for any new `appServices` helpers before UI; extend `ledgerView` tests if logic lives there.

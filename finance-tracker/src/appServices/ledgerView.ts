@@ -27,6 +27,15 @@ export const DEFAULT_LEDGER_FILTERS: LedgerFilterCriteria = {
   settlementRowsOnly: false,
 }
 
+/** Ledger-only: bank settlement linked via auto or user confirm can be sent back to Review (TKT-027). */
+export function ledgerBankSettlementCanReopenForReview(t: Transaction): boolean {
+  return (
+    t.kind === 'BANK_SETTLEMENT' &&
+    Boolean(t.linkedTransactionId) &&
+    (t.reconciliationState === 'AutoMatched' || t.reconciliationState === 'UserConfirmed')
+  )
+}
+
 export function filterLedgerTransactions(
   transactions: Transaction[],
   criteria: LedgerFilterCriteria,
