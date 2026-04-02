@@ -1,13 +1,28 @@
 import type { RuleProfile, Transaction } from '../domain/types'
 import { matchBankAgainstCards, shouldAutoMatchSettlement } from './settlementCandidates'
 
+/** User-resolved rows must not be re-run through auto-match (would reset them to NeedsReview). */
+function eligibleForSettlementAutoMatch(t: Transaction): boolean {
+  return t.reconciliationState !== 'UserConfirmed' && t.reconciliationState !== 'UserOverridden'
+}
+
 export function reconcile(
   transactions: Transaction[],
   profile: RuleProfile,
 ): { updated: Transaction[]; reviewCount: number } {
   const updated = [...transactions]
-  const bank = updated.filter((t) => t.kind === 'BANK_SETTLEMENT' && !t.linkedTransactionId)
-  const card = updated.filter((t) => t.kind === 'CARD_CREDIT' && !t.linkedTransactionId)
+  const bank = updated.filter(
+    (t) =>
+      t.kind === 'BANK_SETTLEMENT' &&
+      !t.linkedTransactionId &&
+      eligibleForSettlementAutoMatch(t),
+  )
+  const card = updated.filter(
+    (t) =>
+      t.kind === 'CARD_CREDIT' &&
+      !t.linkedTransactionId &&
+      eligibleForSettlementAutoMatch(t),
+  )
 
   for (const b of bank) {
     const { best, ambiguous } = matchBankAgainstCards(b, card, profile)

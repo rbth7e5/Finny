@@ -110,4 +110,23 @@ describe('reconcile (PRD §6 settlement / ENG §7.4)', () => {
     expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('AutoMatched')
     expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe('b1')
   })
+
+  it('does not reset UserConfirmed or UserOverridden unlinked bank rows on re-reconcile', () => {
+    const bConfirmed = bank({
+      id: 'b1',
+      amount: 50,
+      reconciliationState: 'UserConfirmed',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+    })
+    const bOver = bank({
+      id: 'b2',
+      amount: 51,
+      reconciliationState: 'UserOverridden',
+      spendImpact: 'TRANSFER',
+    })
+    const { updated, reviewCount } = reconcile([bConfirmed, bOver], profile)
+    expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('UserConfirmed')
+    expect(updated.find((t) => t.id === 'b2')!.reconciliationState).toBe('UserOverridden')
+    expect(reviewCount).toBe(0)
+  })
 })
