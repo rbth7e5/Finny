@@ -74,4 +74,40 @@ describe('reconcile (PRD §6 settlement / ENG §7.4)', () => {
     const { updated: low } = reconcile([b, c], { ...profile, confidenceThreshold: 0.55 })
     expect(low.find((t) => t.id === 'b1')!.reconciliationState).toBe('AutoMatched')
   })
+
+  it('excludes card outside matchWindowDays even when reference matches (TKT-010)', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-01',
+    })
+    const c = card({
+      id: 'c1',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-10',
+    })
+    const { updated } = reconcile([b, c], { ...profile, matchWindowDays: 5 })
+    expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('NeedsReview')
+    expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBeUndefined()
+  })
+
+  it('AutoMatches when reference matches and card date is within matchWindowDays (inclusive)', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-01',
+    })
+    const c = card({
+      id: 'c1',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-06',
+    })
+    const { updated } = reconcile([b, c], { ...profile, matchWindowDays: 5 })
+    expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('AutoMatched')
+    expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe('b1')
+  })
 })

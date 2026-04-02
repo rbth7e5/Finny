@@ -47,6 +47,7 @@ describe('parseTransactionsForSource', () => {
     expect(tx).toHaveLength(1)
     expect(tx[0]!.kind).toBe('BANK_SETTLEMENT')
     expect(tx[0]!.amount).toBe(1234.56)
+    expect(tx[0]!.date).toBe('2024-01-10')
     expect(tx[0]!.sourceType).toBe('UOB_BANK')
     expect(tx[0]!.importId).toBe('imp-1')
     expect(tx[0]!.cardToken).toBe('4111111111111111')

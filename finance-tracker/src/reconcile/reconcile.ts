@@ -1,4 +1,5 @@
 import type { RuleProfile, Transaction } from '../domain/types'
+import { datesWithinMatchWindow } from '../utils/statementDate'
 
 export function reconcile(
   transactions: Transaction[],
@@ -10,7 +11,12 @@ export function reconcile(
 
   for (const b of bank) {
     const candidates = card
-      .filter((c) => Math.abs(c.amount - b.amount) < 0.01 && !c.linkedTransactionId)
+      .filter(
+        (c) =>
+          Math.abs(c.amount - b.amount) < 0.01 &&
+          !c.linkedTransactionId &&
+          datesWithinMatchWindow(b.date, c.date, profile.matchWindowDays),
+      )
       .map((c) => {
         let score = 0.6
         if (b.sourceType.startsWith('DBS') && b.reference && c.reference && b.reference === c.reference) {

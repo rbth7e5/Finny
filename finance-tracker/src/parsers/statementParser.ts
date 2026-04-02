@@ -1,5 +1,6 @@
 import type { SourceType, Transaction } from '../domain/types'
 import { createId } from '../utils/ids'
+import { parseStatementDate, toIsoDateString } from '../utils/statementDate'
 
 function moneyFromLine(line: string): number | null {
   const m = line.match(/(\d{1,3}(?:,\d{3})*\.\d{2})/)
@@ -8,7 +9,9 @@ function moneyFromLine(line: string): number | null {
 }
 
 function normalizeDate(line: string): string {
-  return line.trim()
+  const t = line.trim()
+  const d = parseStatementDate(t)
+  return d ? toIsoDateString(d) : t
 }
 
 function extractCardToken(line: string): string | undefined {

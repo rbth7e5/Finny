@@ -16,6 +16,7 @@ References:
 - Initial load and save failures surface in the UI (empty workspace fallback on load failure; optimistic save with rollback on write failure).
 - **Dev workflow:** Tauri-only (`npx tauri dev`). The browser-localStorage adapter and factory were removed; standalone `npm run dev` in a tab is not a supported persistence path.
 - **Imports:** SHA-256 file hash on each import (SQLite `content_hash`); duplicate successful files are skipped. Transaction fingerprints dedupe re-imported rows. Parsing goes through `runStatementPipeline` → `parseTransactionsForSource` by source type.
+- **Reconciliation:** `matchWindowDays` filters bank↔card candidates when both transaction dates parse; `statementDate` normalises common formats to ISO in parsers when possible.
 - **Process:** New behavior follows **test-driven development** (see [Test-driven development](#test-driven-development-policy)); each backlog ticket states how TDD applies.
 
 ## Ticket Legend
@@ -71,10 +72,10 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-007** | `parsers/statementParser.test.ts` (+ fixtures) | Fixture-driven UOB bank/card line patterns (not full PDF corpus) |
 | **TKT-008** | `parsers/statementParser.test.ts` (+ fixtures) | Fixture-driven DBS bank/card/FAST-style lines (not full PDF corpus) |
 | **TKT-009** | `reconcile/reconcile.test.ts` | Ref-based `AutoMatched`; no match / ambiguous `NeedsReview`; `confidenceThreshold` behavior |
-| **TKT-010** | — | *Not yet:* reconcile tests pass `matchWindowDays` in profile but do not assert date-window boundary cases |
+| **TKT-010** | `utils/statementDate.test.ts`, `reconcile/reconcile.test.ts` | `parseStatementDate` / ISO + DD/MM/YYYY + month-name; `matchWindowDays` gates candidates in `reconcile`; parsers emit ISO when parse succeeds |
 | **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override → reconciliation state + spend impact (not full link persistence / both sides of a link) |
 | **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` filters `NeedsReview` |
-| **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps noted for TKT-010 and deeper parser/reconcile cases |
+| **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps: deeper parser edge cases, golden outputs (TKT-020) |
 | **TKT-019** | `appServices/finnyApp.test.ts` (partial) | In-memory import → reconcile user messaging; **no** SQLite / IPC round-trip yet |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
 
@@ -201,11 +202,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-007, TKT-008
 
 ### TKT-010 - Implement real date normalization and match window logic
+- **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); add failing `reconcile` (or date-helper) tests for window boundaries before changing matching logic.
 - **Description:** Parse transaction dates into structured values and apply `matchWindowDays` in candidate matching.
-- **Unit tests:** None yet (reconcile tests use a fixed `matchWindowDays` in profile without asserting window boundaries).
+- **Unit tests:** `statementDate.test.ts`, `reconcile.test.ts` (match-window inclusion/exclusion); parsers use `statementDate` for ISO-normalised `Transaction.date` when recognised.
 - **Acceptance criteria:**
   - Date parsing is deterministic for supported formats.
   - `matchWindowDays` actively affects reconciliation outcomes.
@@ -313,7 +315,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Priority:** P0
 - **Type:** Quality
 - **TDD:** Required — primary deliverable is tests; add failing cases first, then fix code until green ([Test-driven development](#test-driven-development-policy)).
-- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring, fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Remaining: explicit date/`matchWindowDays` tests (TKT-010), broader parser edge cases, optional golden outputs (TKT-020).
+- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring (including TKT-010 match window), fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Remaining: broader parser edge cases, optional golden outputs (TKT-020).
 - **Description:** Add unit tests for source detection, parser extraction, date normalization, matching precedence, and review fallback.
 - **Acceptance criteria:**
   - Test suite covers UOB and DBS sample-driven cases.
