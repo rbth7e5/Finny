@@ -75,7 +75,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-010** | `utils/statementDate.test.ts`, `reconcile/reconcile.test.ts` | `parseStatementDate` / ISO + DD/MM/YYYY + month-name; `matchWindowDays` gates candidates in `reconcile`; parsers emit ISO when parse succeeds |
 | **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override; linked counterpart updated in sync; override clears `linkedTransactionId` |
 | **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` + ordering (see TKT-014); `inferMonthKey` + `getMonthlyStatus` (ER §11) |
-| **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps: deeper parser edge cases, golden outputs (TKT-020) |
+| **TKT-018** | *See rows above*; `reconcile.test.ts` | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; reconcile: linked `AutoMatched`/`UserConfirmed` stable on re-run, one card → one bank; gaps: deeper parser edge cases, golden outputs (TKT-020) |
 | **TKT-013** | `appServices/importDisplay.test.ts`, `appServices/finnyApp.test.ts` | Import row outcome (`success` / `partial` / `failed`), failure taxonomy hints; `ImportPdfResult.session` (duplicate files + skipped txn rows); UI copy in `App.tsx` import tab |
 | **TKT-014** | `reconcile/reviewExplain.test.ts`, `appServices/monthlyClose.test.ts` | Review reason codes (`NO_COUNTERPART_IN_WINDOW`, `DATE_OUTSIDE_MATCH_WINDOW`, `LOW_CONFIDENCE`, `AMBIGUOUS_CANDIDATES`, `CARD_CREDIT_UNMATCHED`); markers + import file; stable review queue sort |
 | **TKT-015** | `appServices/ledgerView.test.ts` | `filterLedgerTransactions` (source / needs review / settlement-only); `buildLedgerDetailModel` (import trace, link peer, review vs reconciled copy) |
@@ -361,7 +361,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Priority:** P0
 - **Type:** Quality
 - **TDD:** Required — primary deliverable is tests; add failing cases first, then fix code until green ([Test-driven development](#test-driven-development-policy)).
-- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring (including TKT-010 match window), fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Remaining: broader parser edge cases, optional golden outputs (TKT-020).
+- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring (including TKT-010 match window), fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Reconcile hardening: re-`reconcile` leaves linked `AutoMatched` / `UserConfirmed` pairs unchanged; one-to-one consumption when two banks compete for one card. Remaining: broader parser edge cases, optional golden outputs (TKT-020).
 - **Description:** Add unit tests for source detection, parser extraction, date normalization, matching precedence, and review fallback.
 - **Acceptance criteria:**
   - Test suite covers UOB and DBS sample-driven cases.

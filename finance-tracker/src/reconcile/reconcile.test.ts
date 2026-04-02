@@ -169,4 +169,70 @@ describe('reconcile (PRD §6 settlement / ENG §7.4)', () => {
     expect(updated.find((t) => t.id === 'b2')!.reconciliationState).toBe('UserOverridden')
     expect(reviewCount).toBe(0)
   })
+
+  it('leaves AutoMatched linked pairs unchanged on re-reconcile (TKT-018)', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 100,
+      reference: 'R1',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+      linkedTransactionId: 'c1',
+    })
+    const c = card({
+      id: 'c1',
+      amount: 100,
+      reference: 'R1',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+      linkedTransactionId: 'b1',
+    })
+    const { updated, reviewCount } = reconcile([b, c], profile)
+    const b2 = updated.find((t) => t.id === 'b1')!
+    const c2 = updated.find((t) => t.id === 'c1')!
+    expect(b2.reconciliationState).toBe('AutoMatched')
+    expect(c2.reconciliationState).toBe('AutoMatched')
+    expect(b2.linkedTransactionId).toBe('c1')
+    expect(c2.linkedTransactionId).toBe('b1')
+    expect(reviewCount).toBe(0)
+  })
+
+  it('leaves UserConfirmed linked pairs unchanged on re-reconcile (TKT-018)', () => {
+    const b = bank({
+      id: 'b1',
+      amount: 88,
+      reference: 'R9',
+      reconciliationState: 'UserConfirmed',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+      linkedTransactionId: 'c1',
+    })
+    const c = card({
+      id: 'c1',
+      amount: 88,
+      reference: 'R9',
+      reconciliationState: 'UserConfirmed',
+      spendImpact: 'SETTLEMENT_EXCLUDED',
+      linkedTransactionId: 'b1',
+    })
+    const { updated, reviewCount } = reconcile([b, c], profile)
+    expect(updated.find((t) => t.id === 'b1')!.linkedTransactionId).toBe('c1')
+    expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe('b1')
+    expect(reviewCount).toBe(0)
+  })
+
+  it('consumes each unmatched card at most once (sequential banks; TKT-018 / one-to-one)', () => {
+    const b1 = bank({ id: 'b1', amount: 200, date: '2024-01-01' })
+    const b2 = bank({ id: 'b2', amount: 200, date: '2024-01-01' })
+    const c = card({ id: 'c1', amount: 200, date: '2024-01-02' })
+    const { updated } = reconcile([b1, b2, c], { ...profile, confidenceThreshold: 0.55 })
+    const autoBanks = updated.filter(
+      (t) => t.kind === 'BANK_SETTLEMENT' && t.reconciliationState === 'AutoMatched',
+    )
+    const reviewBanks = updated.filter(
+      (t) => t.kind === 'BANK_SETTLEMENT' && t.reconciliationState === 'NeedsReview',
+    )
+    expect(autoBanks).toHaveLength(1)
+    expect(reviewBanks).toHaveLength(1)
+    expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe(autoBanks[0]!.id)
+  })
 })
