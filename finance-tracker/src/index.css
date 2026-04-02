@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    margin: 0;
+    background: rgb(248 250 252);
+    font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+    color: rgb(15 23 42);
+  }
+}
