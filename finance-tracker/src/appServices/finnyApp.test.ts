@@ -24,7 +24,17 @@ vi.mock('../utils/ids', () => ({
 
 import { readPdfText } from '../parsers/pdfText'
 import { sha256HexOfFile } from '../utils/fileHash'
+import type { ImportPdfResult } from './finnyApp'
 import { importPdfStatements, resolveReviewItem, updateRuleProfile } from './finnyApp'
+
+/** Narrows union so `tsc -b` accepts `.next` (Vitest's `expect` does not narrow). */
+function expectImportOk(r: ImportPdfResult): Extract<ImportPdfResult, { ok: true }> {
+  expect(r.ok).toBe(true)
+  if (!r.ok) {
+    throw new Error(r.userMessage)
+  }
+  return r
+}
 
 const readPdfTextMock = vi.mocked(readPdfText)
 const sha256Mock = vi.mocked(sha256HexOfFile)
@@ -45,9 +55,10 @@ describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () =>
     sha256Mock.mockResolvedValue('hash-new-1')
     readPdfTextMock.mockResolvedValue(`${UOB_BANK_HEADER}\n${UOB_BANK_BILL_PAYMENT}`)
 
-    const r = await importPdfStatements(emptyState(), [new File(['x'], 'stmt.pdf', { type: 'application/pdf' })])
+    const r = expectImportOk(
+      await importPdfStatements(emptyState(), [new File(['x'], 'stmt.pdf', { type: 'application/pdf' })]),
+    )
 
-    expect(r.ok).toBe(true)
     expect(r.next.imports).toHaveLength(1)
     expect(r.next.imports[0]!.contentHash).toBe('hash-new-1')
     expect(r.next.imports[0]!.status).toBe('SUCCESS')
@@ -67,9 +78,10 @@ describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () =>
     })
 
     sha256Mock.mockResolvedValue('same-hash')
-    const r = await importPdfStatements(state, [new File(['y'], 'dup.pdf', { type: 'application/pdf' })])
+    const r = expectImportOk(
+      await importPdfStatements(state, [new File(['y'], 'dup.pdf', { type: 'application/pdf' })]),
+    )
 
-    expect(r.ok).toBe(true)
     expect(r.next.imports).toHaveLength(1)
     expect(readPdfTextMock).not.toHaveBeenCalled()
     expect(r.userMessage).toMatch(/Skipped 1 duplicate file/i)
@@ -89,9 +101,10 @@ describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () =>
     sha256Mock.mockResolvedValue('retry-hash')
     readPdfTextMock.mockResolvedValue(`${UOB_BANK_HEADER}\n${UOB_BANK_BILL_PAYMENT}`)
 
-    const r = await importPdfStatements(state, [new File(['z'], 'retry.pdf', { type: 'application/pdf' })])
+    const r = expectImportOk(
+      await importPdfStatements(state, [new File(['z'], 'retry.pdf', { type: 'application/pdf' })]),
+    )
 
-    expect(r.ok).toBe(true)
     expect(r.next.imports.length).toBe(2)
     expect(readPdfTextMock).toHaveBeenCalled()
   })
@@ -101,12 +114,10 @@ describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () =>
     const text = `${UOB_BANK_HEADER}\n${UOB_BANK_BILL_PAYMENT}`
     readPdfTextMock.mockResolvedValue(text)
 
-    const first = await importPdfStatements(emptyState(), [new File(['1'], 'a.pdf')])
-    expect(first.ok).toBe(true)
+    const first = expectImportOk(await importPdfStatements(emptyState(), [new File(['1'], 'a.pdf')]))
     const nAfterFirst = first.next.transactions.length
 
-    const second = await importPdfStatements(first.next, [new File(['2'], 'b.pdf')])
-    expect(second.ok).toBe(true)
+    const second = expectImportOk(await importPdfStatements(first.next, [new File(['2'], 'b.pdf')]))
     expect(second.next.transactions.length).toBe(nAfterFirst)
     expect(second.userMessage).toMatch(/duplicate transaction row/i)
   })
