@@ -210,29 +210,60 @@ function App() {
           {reviewItems.length === 0 ? (
             <p className="text-sm">No unresolved items.</p>
           ) : (
-            reviewItems.map((item) => (
-              <article key={item.id} className="mb-2 rounded-lg border border-slate-200 p-3">
-                <p className="text-sm">
-                  <strong>{item.description}</strong> - {item.amount.toFixed(2)}
+            <>
+              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p className="mb-2 font-medium text-slate-900">What you’re choosing</p>
+                <p className="mb-2">
+                  Each item is usually a <strong>bank</strong> line that might pay a <strong>card</strong> bill. Finny
+                  could not match it automatically with enough confidence.
                 </p>
-                <p className="text-sm">Type: {item.kind}</p>
-                <p className="mb-2 text-sm">Reference: {item.reference ?? 'N/A'}</p>
-                <div className="flex gap-2">
-                  <button
-                    className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1 text-sm text-emerald-900"
-                    onClick={() => onResolveReview(item.id, 'confirm')}
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1 text-sm text-amber-900"
-                    onClick={() => onResolveReview(item.id, 'override')}
-                  >
-                    Override
-                  </button>
-                </div>
-              </article>
-            ))
+                <ul className="list-inside list-disc space-y-1 text-slate-600">
+                  <li>
+                    <strong className="text-slate-800">This paid my card</strong> — Same as confirming the link: the
+                    bank line is the card payment, so it is <strong>not</strong> counted again as everyday spending
+                    (the card side already reflects the purchase).
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">Something else</strong> — This line is <strong>not</strong>{' '}
+                    paying off the card (e.g. a transfer or unrelated payment). Spending rules will treat it as a{' '}
+                    <strong>transfer</strong> instead.
+                  </li>
+                </ul>
+              </div>
+              {reviewItems.map((item) => (
+                <article key={item.id} className="mb-3 rounded-lg border border-slate-200 p-3">
+                  <p className="text-sm">
+                    <strong>{item.description}</strong> — {item.amount.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-slate-600">Type: {item.kind}</p>
+                  <p className="mb-3 text-sm text-slate-600">Reference: {item.reference ?? '—'}</p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <button
+                      type="button"
+                      className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-left text-sm text-emerald-950 hover:bg-emerald-100"
+                      title="Marks this line as paying your card; excluded from double-counting as spend."
+                      onClick={() => onResolveReview(item.id, 'confirm')}
+                    >
+                      <span className="font-medium">This paid my card</span>
+                      <span className="mt-0.5 block text-xs font-normal text-emerald-900/90">
+                        Don’t count as extra spending (settlement excluded)
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950 hover:bg-amber-100"
+                      title="Not a card payoff; treat as a transfer for spending logic."
+                      onClick={() => onResolveReview(item.id, 'override')}
+                    >
+                      <span className="font-medium">Something else</span>
+                      <span className="mt-0.5 block text-xs font-normal text-amber-900/90">
+                        Not paying the card — use transfer treatment
+                      </span>
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </>
           )}
         </section>
       )}
