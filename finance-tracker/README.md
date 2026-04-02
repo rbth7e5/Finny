@@ -17,7 +17,9 @@ From this directory (`finance-tracker/`):
 npm install
 ```
 
-If you change **`package.json`** (dependencies or scripts), run **`npm install`** again and **commit `package-lock.json`** together with `package.json`. CI uses **`npm ci`**, which fails when those two files disagree; the workflow also checks that the lockfile matches `package.json` before install.
+If you change **`package.json`** (dependencies or scripts), run **`npm install`** again and **commit `package-lock.json`** together with `package.json`. CI runs **`npm ci`**, which fails if the lockfile cannot satisfy `package.json` (missing or mismatched versions).
+
+Avoid editing the lockfile by hand. If teammates use different **npm** major versions, you may see cosmetic `package-lock.json` diffs after `npm install`; pick one teammate’s regenerated lockfile, commit it, and align on a shared **Node/npm** version when possible (e.g. Node 22 LTS on CI).
 
 ## Run locally
 
