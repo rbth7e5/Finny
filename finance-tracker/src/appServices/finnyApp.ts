@@ -7,6 +7,8 @@ import { sha256HexOfFile } from '../utils/fileHash'
 import { reconcile } from '../reconcile/reconcile'
 import type { ImportSessionMeta } from './importDisplay'
 
+export { confirmSettlementPair, listSettlementCardCandidates } from './settlementReview'
+
 export type ImportPdfResult =
   | { ok: true; next: AppState; userMessage: string; session: ImportSessionMeta }
   | { ok: false; userMessage: string }

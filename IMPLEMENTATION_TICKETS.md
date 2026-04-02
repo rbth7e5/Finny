@@ -82,6 +82,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-019** | `appServices/finnyApp.test.ts`, `appServices/finnyApp.integration.test.ts` | Import → reconcile (incl. DBS auto-match chain), `ImportPdfResult.session` dedupe signals, monthly status → `resolveReviewItem` → `VIEW_SUMMARY`; **no** SQLite / IPC round-trip (TKT-025) |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
 | **TKT-016** | `reconcile/settlementCandidates.test.ts`, `reconcile/reconcile.test.ts`, `reconcile/reviewExplain.test.ts`, `appServices/finnyApp.test.ts` | `sameIssuerCardMatchingOnly` scopes settlement candidates; SQLite `rule_profile` column; Settings UI |
+| **TKT-026** | `appServices/settlementReview.test.ts` | `listSettlementCardCandidates`, `confirmSettlementPair` (link + remap); `matchBankAgainstCards` includes card already linked to same bank; Review tab pairing UI in `App.tsx` |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
 
@@ -270,9 +271,11 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-011
 
 ### TKT-026 - Manual settlement pairing and link remap (FR-7 / Scenario C)
+- **Status:** DONE
 - **Priority:** P1
 - **Type:** Frontend / Application services
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); failing Vitest for `resolveReviewItem` (or successor) and review-queue helpers before UI wiring; optional integration scenario in `finnyApp.integration.test.ts`.
+- **Unit tests:** `appServices/settlementReview.test.ts`.
 - **Description:** Close the gap versus [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md) **FR-7** (“confirm, reject, or **remap** settlement **links**”), **Scenario C** (user **remaps** link), and [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) Review actions (“**Pick another candidate**”, confirm suggested link). Today, confirm/override on an **unlinked** bank settlement only updates spend semantics and does **not** create a `linkedTransactionId`; users cannot choose which card credit pairs with a settlement.
 - **Acceptance criteria:**
   - For a `NeedsReview` `BANK_SETTLEMENT` with no link, the Review UI offers a **concrete pairing path**: show ranked/eligible `CARD_CREDIT` candidates (reuse `matchBankAgainstCards` / same gates as auto-match, e.g. amount, match window, issuer scope from rule profile) and let the user **select one** and confirm, setting **bidirectional** `linkedTransactionId` and `UserConfirmed` / `SETTLEMENT_EXCLUDED` on both sides (aligned with TKT-011 symmetry).
@@ -280,6 +283,18 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - **Remap:** If a bank line is already linked (e.g. user corrects a wrong auto-match), user can change the paired card to another eligible line or clear the link per product rules; persisted state stays consistent on save/reload (see **TKT-025** links invariant).
   - Re-import / re-run `reconcile` must not destroy **user-confirmed** links (existing `eligibleForSettlementAutoMatch` behavior remains; extend tests if remap introduces new edge cases).
 - **Dependencies:** TKT-011, TKT-014, TKT-009, TKT-016
+- **Follow-up:** **TKT-027** — entry point to correct wrong **auto** matches that never appear in Review.
+
+### TKT-027 - Reopen or remap AutoMatched settlements (Ledger entry)
+- **Priority:** P2
+- **Type:** Frontend / Application services
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); Vitest for any new `appServices` helpers before UI; extend `ledgerView` tests if logic lives there.
+- **Description:** **TKT-026** covers manual pairing for **`NeedsReview`** bank settlements. **`AutoMatched`** (and optionally **`UserConfirmed`**) linked pairs do **not** appear in the Review queue, so a user cannot fix a mistaken auto-link without editing raw state. Add a **Ledger**-based path (and/or a dedicated “linked settlements” surface) to **reopen** a settlement for review or **jump into remap** using the same candidate list and `confirmSettlementPair` as TKT-026.
+- **Acceptance criteria:**
+  - From Ledger detail (or equivalent), user can act on a `BANK_SETTLEMENT` that is `AutoMatched` or `UserConfirmed` and has `linkedTransactionId`: e.g. **“Change pairing”** / **“Send to review”** with clear copy aligned to [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) Review actions.
+  - Action puts bank (and previously linked card, if applicable) into a state where the user can pick another candidate or override — **without** breaking idempotent re-import or `eligibleForSettlementAutoMatch` invariants (document behavior if `reconcile` runs after reopen).
+  - Persisted state round-trips through SQLite (TKT-004); no orphaned `linked_transaction_id` (TKT-025 links invariant).
+- **Dependencies:** TKT-026, TKT-015, TKT-011
 
 ### TKT-015 - Ledger + detail explainability view
 - **Status:** DONE
@@ -432,6 +447,8 @@ flowchart TD
   t11 --> t26
   t9 --> t26
   t16 --> t26
+  t26 --> t27[TKT027ReopenAutoMatched]
+  t15 --> t27
   t11 --> t15[TKT015LedgerDetail]
   t9 --> t16[TKT016RuleSettings]
   t10 --> t16

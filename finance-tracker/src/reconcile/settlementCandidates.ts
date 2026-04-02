@@ -35,7 +35,7 @@ export function matchBankAgainstCards(
     .filter(
       (c) =>
         Math.abs(c.amount - b.amount) < 0.01 &&
-        !c.linkedTransactionId &&
+        (!c.linkedTransactionId || c.linkedTransactionId === b.id) &&
         datesWithinMatchWindow(b.date, c.date, profile.matchWindowDays),
     )
     .map((c) => {

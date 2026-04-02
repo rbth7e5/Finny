@@ -13,7 +13,9 @@ import {
   type ImportSessionMeta,
 } from './appServices/importDisplay'
 import {
+  confirmSettlementPair,
   importPdfStatements,
+  listSettlementCardCandidates,
   resolveReviewItem,
   updateRuleProfile,
 } from './appServices/finnyApp'
@@ -38,6 +40,8 @@ function App() {
   const [ledgerSettlementOnly, setLedgerSettlementOnly] = useState(false)
   const [ledgerSelectedId, setLedgerSelectedId] = useState<string | null>(null)
   const [importSessionMeta, setImportSessionMeta] = useState<ImportSessionMeta | null>(null)
+  /** Review tab: chosen card id per bank settlement id (defaults to best-ranked candidate). */
+  const [pairingSelection, setPairingSelection] = useState<Record<string, string>>({})
 
   const importSessionBanner = useMemo(
     () => buildImportSessionBanner(importSessionMeta ?? undefined),
@@ -144,6 +148,24 @@ function App() {
   function onResolveReview(itemId: string, action: 'confirm' | 'override') {
     if (!state) return
     void patchState(resolveReviewItem(state, itemId, action))
+  }
+
+  async function onConfirmSettlementPair(bankId: string, cardId: string) {
+    if (!state || !cardId) return
+    const r = confirmSettlementPair(state, bankId, cardId)
+    if (!r.ok) {
+      setMessage(r.reason)
+      return
+    }
+    const saved = await patchState(r.next)
+    if (saved) {
+      setPairingSelection((prev) => {
+        const next = { ...prev }
+        delete next[bankId]
+        return next
+      })
+      setMessage('')
+    }
   }
 
   if (!state) {
@@ -329,9 +351,13 @@ function App() {
                 </p>
                 <ul className="list-inside list-disc space-y-1 text-slate-600">
                   <li>
-                    <strong className="text-slate-800">This paid my card</strong> — Same as confirming the link: the
-                    bank line is the card payment, so it is <strong>not</strong> counted again as everyday spending
-                    (the card side already reflects the purchase).
+                    <strong className="text-slate-800">Pick card line + confirm pairing</strong> — When Finny lists
+                    matching card payment credits, select the right one and confirm so both rows stay linked and
+                    excluded from double-counted spend.
+                  </li>
+                  <li>
+                    <strong className="text-slate-800">This paid my card</strong> — Use when <strong>no</strong> card
+                    line appears in the list (still a payoff, but no import to pair).
                   </li>
                   <li>
                     <strong className="text-slate-800">Something else</strong> — This line is <strong>not</strong>{' '}
@@ -346,6 +372,13 @@ function App() {
                   state,
                   state.profile,
                 )
+                const settlementCandidates =
+                  item.kind === 'BANK_SETTLEMENT'
+                    ? listSettlementCardCandidates(state.transactions, item, state.profile)
+                    : []
+                const defaultCardId = settlementCandidates[0]?.c.id ?? ''
+                const selectedCardId = pairingSelection[item.id] ?? defaultCardId
+
                 return (
                 <article key={item.id} className="mb-3 rounded-lg border border-slate-200 p-3">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -371,18 +404,61 @@ function App() {
                       <li key={m}>{m}</li>
                     ))}
                   </ul>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                    <button
-                      type="button"
-                      className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-left text-sm text-emerald-950 hover:bg-emerald-100"
-                      title="Marks this line as paying your card; excluded from double-counting as spend."
-                      onClick={() => onResolveReview(item.id, 'confirm')}
-                    >
-                      <span className="font-medium">This paid my card</span>
-                      <span className="mt-0.5 block text-xs font-normal text-emerald-900/90">
-                        Don’t count as extra spending (settlement excluded)
-                      </span>
-                    </button>
+                  {settlementCandidates.length > 0 && (
+                    <fieldset className="mt-3 rounded-md border border-slate-200 bg-slate-50/80 p-3">
+                      <legend className="px-1 text-xs font-medium text-slate-700">
+                        Card payment to pair (same amount + match window + issuer rules)
+                      </legend>
+                      <ul className="mt-2 space-y-2">
+                        {settlementCandidates.map(({ c, score }) => {
+                          const cardFile = state.imports.find((i) => i.id === c.importId)?.fileName
+                          return (
+                            <li key={c.id}>
+                              <label className="flex cursor-pointer gap-2 text-sm text-slate-800">
+                                <input
+                                  type="radio"
+                                  name={`pair-${item.id}`}
+                                  checked={selectedCardId === c.id}
+                                  onChange={() =>
+                                    setPairingSelection((prev) => ({ ...prev, [item.id]: c.id }))
+                                  }
+                                />
+                                <span>
+                                  {c.description} — {c.amount.toFixed(2)} · {c.date}
+                                  <span className="block text-xs text-slate-500">
+                                    Score {score.toFixed(2)}
+                                    {cardFile ? ` · ${cardFile}` : ''}
+                                  </span>
+                                </span>
+                              </label>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                      <button
+                        type="button"
+                        className="mt-3 w-full rounded-md border border-emerald-400 bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 sm:w-auto"
+                        disabled={!selectedCardId}
+                        onClick={() => void onConfirmSettlementPair(item.id, selectedCardId)}
+                      >
+                        Confirm pairing
+                      </button>
+                    </fieldset>
+                  )}
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    {settlementCandidates.length === 0 && (
+                      <button
+                        type="button"
+                        className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-left text-sm text-emerald-950 hover:bg-emerald-100"
+                        title="Marks this line as paying your card; excluded from double-counting as spend."
+                        onClick={() => onResolveReview(item.id, 'confirm')}
+                      >
+                        <span className="font-medium">This paid my card</span>
+                        <span className="mt-0.5 block text-xs font-normal text-emerald-900/90">
+                          No matching card line listed — still exclude from double-counted spend
+                        </span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-left text-sm text-amber-950 hover:bg-amber-100"
