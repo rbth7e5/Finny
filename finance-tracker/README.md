@@ -21,6 +21,8 @@ If you change **`package.json`** (dependencies or scripts), run **`npm install`*
 
 Avoid editing the lockfile by hand. If teammates use different **npm** major versions, you may see cosmetic `package-lock.json` diffs after `npm install`; pick one teammate’s regenerated lockfile, commit it, and align on a shared **Node/npm** version when possible (e.g. Node 22 LTS on CI).
 
+**`@emnapi/core` / `@emnapi/runtime`:** These are declared as direct `devDependencies` (not only transitive peers) so **`npm ci` on Linux** always resolves them. Some **Windows** installs left them out of `package-lock.json`, which broke GitHub Actions with “Missing … from lock file”.
+
 ## Run locally
 
 Starts the Vite dev server and opens the **Tauri** window (`beforeDevCommand` in `src-tauri/tauri.conf.json` runs `npm run dev` for you).
