@@ -5,9 +5,10 @@ import { runStatementPipeline } from '../parsers/pipeline'
 import { createId } from '../utils/ids'
 import { sha256HexOfFile } from '../utils/fileHash'
 import { reconcile } from '../reconcile/reconcile'
+import type { ImportSessionMeta } from './importDisplay'
 
 export type ImportPdfResult =
-  | { ok: true; next: AppState; userMessage: string }
+  | { ok: true; next: AppState; userMessage: string; session: ImportSessionMeta }
   | { ok: false; userMessage: string }
 
 function hasSuccessfulImportWithHash(imports: AppState['imports'], hash: string): boolean {
@@ -69,21 +70,16 @@ export async function importPdfStatements(current: AppState, files: File[]): Pro
 
     const reconciled = reconcile(txns, current.profile)
 
-    const parts: string[] = []
-    parts.push(`Import complete. ${reconciled.reviewCount} item(s) need review.`)
-    if (skippedDuplicateFiles.length) {
-      parts.push(
-        `Skipped ${skippedDuplicateFiles.length} duplicate file(s) (already imported): ${skippedDuplicateFiles.join(', ')}.`,
-      )
-    }
-    if (skippedDuplicateTxnCount) {
-      parts.push(`Skipped ${skippedDuplicateTxnCount} duplicate transaction row(s) already in the ledger.`)
-    }
+    const userMessage = `Import complete. ${reconciled.reviewCount} item(s) need review.`
 
     return {
       ok: true,
       next: { ...current, imports, transactions: reconciled.updated },
-      userMessage: parts.join(' '),
+      userMessage,
+      session: {
+        duplicateFileNames: skippedDuplicateFiles,
+        skippedDuplicateTxnCount,
+      },
     }
   } catch (err) {
     return { ok: false, userMessage: `Import failed: ${String(err)}` }

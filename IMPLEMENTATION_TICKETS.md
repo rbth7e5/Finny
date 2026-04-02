@@ -76,9 +76,10 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override; linked counterpart updated in sync; override clears `linkedTransactionId` |
 | **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` + ordering (see TKT-014); `inferMonthKey` + `getMonthlyStatus` (ER §11) |
 | **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps: deeper parser edge cases, golden outputs (TKT-020) |
+| **TKT-013** | `appServices/importDisplay.test.ts`, `appServices/finnyApp.test.ts` | Import row outcome (`success` / `partial` / `failed`), failure taxonomy hints; `ImportPdfResult.session` (duplicate files + skipped txn rows); UI copy in `App.tsx` import tab |
 | **TKT-014** | `reconcile/reviewExplain.test.ts`, `appServices/monthlyClose.test.ts` | Review reason codes (`NO_COUNTERPART_IN_WINDOW`, `DATE_OUTSIDE_MATCH_WINDOW`, `LOW_CONFIDENCE`, `AMBIGUOUS_CANDIDATES`, `CARD_CREDIT_UNMATCHED`); markers + import file; stable review queue sort |
 | **TKT-015** | `appServices/ledgerView.test.ts` | `filterLedgerTransactions` (source / needs review / settlement-only); `buildLedgerDetailModel` (import trace, link peer, review vs reconciled copy) |
-| **TKT-019** | `appServices/finnyApp.test.ts`, `appServices/finnyApp.integration.test.ts` | Import → reconcile (incl. DBS auto-match chain), re-import txn dedupe, monthly status → `resolveReviewItem` → `VIEW_SUMMARY`; **no** SQLite / IPC round-trip (TKT-025) |
+| **TKT-019** | `appServices/finnyApp.test.ts`, `appServices/finnyApp.integration.test.ts` | Import → reconcile (incl. DBS auto-match chain), `ImportPdfResult.session` dedupe signals, monthly status → `resolveReviewItem` → `VIEW_SUMMARY`; **no** SQLite / IPC round-trip (TKT-025) |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
@@ -168,6 +169,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-001, TKT-002
 
 ### TKT-007 - Harden UOB PDF parsers (bank + card)
+- **Status:** DONE (fixture-level coverage; full PDF corpus not required for v1)
 - **Priority:** P0
 - **Type:** Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); add fixture text and failing parser expectations before changing extraction logic.
@@ -180,6 +182,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-006, TKT-004
 
 ### TKT-008 - Harden DBS/POSB PDF parsers (bank + card)
+- **Status:** DONE (fixture-level coverage; full PDF corpus not required for v1)
 - **Priority:** P0
 - **Type:** Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); add fixture text and failing parser expectations before changing extraction logic.
@@ -192,6 +195,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-006, TKT-004
 
 ### TKT-009 - Implement deterministic reconciliation engine v1
+- **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy).
@@ -240,10 +244,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-005, TKT-011
 
 ### TKT-013 - Import UI hardening and feedback states
+- **Status:** DONE
 - **Priority:** P1
 - **Type:** Frontend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); cover user-visible outcomes with component tests, Vitest-tested view-model helpers, or a thin E2E/smoke path — avoid merging UI-only behavior with no automated check.
 - **Description:** Improve import screen with per-file status, warnings, duplicate/reprocess messaging, and failure categories.
+- **Unit tests:** `importDisplay.test.ts`; `finnyApp` returns `session` on success; import tab in `App.tsx` (badges, banner, legend).
 - **Acceptance criteria:**
   - User can distinguish success, partial, failed, duplicate outcomes.
   - Non-transaction section handling surfaces as info, not fatal errors.

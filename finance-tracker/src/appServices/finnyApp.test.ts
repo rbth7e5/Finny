@@ -84,7 +84,7 @@ describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () =>
 
     expect(r.next.imports).toHaveLength(1)
     expect(readPdfTextMock).not.toHaveBeenCalled()
-    expect(r.userMessage).toMatch(/Skipped 1 duplicate file/i)
+    expect(r.session.duplicateFileNames).toContain('dup.pdf')
   })
 
   it('does not skip duplicate hash if prior import failed (allows retry)', async () => {
@@ -119,7 +119,7 @@ describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () =>
 
     const second = expectImportOk(await importPdfStatements(first.next, [new File(['2'], 'b.pdf')]))
     expect(second.next.transactions.length).toBe(nAfterFirst)
-    expect(second.userMessage).toMatch(/duplicate transaction row/i)
+    expect(second.session.skippedDuplicateTxnCount).toBeGreaterThan(0)
   })
 })
 

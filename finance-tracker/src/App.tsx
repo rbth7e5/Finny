@@ -8,6 +8,11 @@ import {
   type LedgerSourceFilter,
 } from './appServices/ledgerView'
 import {
+  buildImportSessionBanner,
+  classifyImportRow,
+  type ImportSessionMeta,
+} from './appServices/importDisplay'
+import {
   importPdfStatements,
   resolveReviewItem,
   updateRuleProfile,
@@ -32,6 +37,12 @@ function App() {
   const [ledgerNeedsReviewOnly, setLedgerNeedsReviewOnly] = useState(false)
   const [ledgerSettlementOnly, setLedgerSettlementOnly] = useState(false)
   const [ledgerSelectedId, setLedgerSelectedId] = useState<string | null>(null)
+  const [importSessionMeta, setImportSessionMeta] = useState<ImportSessionMeta | null>(null)
+
+  const importSessionBanner = useMemo(
+    () => buildImportSessionBanner(importSessionMeta ?? undefined),
+    [importSessionMeta],
+  )
 
   useEffect(() => {
     void storage
@@ -107,18 +118,22 @@ function App() {
     if (!files?.length || !state) return
     setBusy(true)
     setMessage('')
+    setImportSessionMeta(null)
     try {
       const result = await importPdfStatements(state, Array.from(files))
       if (result.ok) {
         const saved = await patchState(result.next)
         if (saved) {
           setMessage(result.userMessage)
+          setImportSessionMeta(result.session)
         } else {
+          setImportSessionMeta(null)
           setMessage(
             'Import was processed in memory but could not be saved. Your previous data is unchanged.',
           )
         }
       } else {
+        setImportSessionMeta(null)
         setMessage(result.userMessage)
       }
     } finally {
@@ -218,6 +233,11 @@ function App() {
       {tab === 'import' && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-lg font-medium">Import Statements (PDF-first)</h2>
+          <p className="mb-3 text-sm text-slate-600">
+            PDFs are read locally. <strong>Success</strong> means the format was recognized;{' '}
+            <strong>Imported (check info)</strong> means the file parsed but no transaction lines matched (or parser
+            left a note) — not a crash. <strong>Failed</strong> means the statement type was not recognized.
+          </p>
           <input
             type="file"
             accept=".pdf,application/pdf"
@@ -228,26 +248,65 @@ function App() {
           />
           {busy && <p className="mb-2 text-sm text-slate-700">Processing PDF files...</p>}
           {message && <p className="mb-2 text-sm text-slate-700">{message}</p>}
+          {importSessionBanner && (
+            <div
+              className={`mb-3 rounded-lg border px-3 py-2 text-sm ${
+                importSessionBanner.tone === 'warning'
+                  ? 'border-amber-200 bg-amber-50 text-amber-950'
+                  : 'border-sky-200 bg-sky-50 text-sky-950'
+              }`}
+              role="status"
+            >
+              {importSessionBanner.lines.map((line, idx) => (
+                <p key={idx} className={idx ? 'mt-1' : ''}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
+                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Outcome</th>
                 <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">File</th>
                 <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Source</th>
-                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Status</th>
+                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Raw status</th>
+                <th className="border-b border-slate-200 px-2 py-2 text-left font-medium">Detail</th>
               </tr>
             </thead>
             <tbody>
-              {state.imports.map((i) => (
-                <tr key={i.id}>
-                  <td className="border-b border-slate-200 px-2 py-2">{i.fileName}</td>
-                  <td className="border-b border-slate-200 px-2 py-2">{i.sourceType}</td>
-                  <td className="border-b border-slate-200 px-2 py-2">
-                    {i.warning ? `${i.status} (${i.warning})` : i.status}
-                  </td>
-                </tr>
-              ))}
+              {state.imports.map((i) => {
+                const row = classifyImportRow(i)
+                const badgeClass =
+                  row.outcome === 'success'
+                    ? 'bg-emerald-100 text-emerald-950'
+                    : row.outcome === 'partial'
+                      ? 'bg-amber-100 text-amber-950'
+                      : 'bg-red-100 text-red-950'
+                return (
+                  <tr key={i.id}>
+                    <td className="border-b border-slate-200 px-2 py-2 align-top">
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}>
+                        {row.badgeLabel}
+                      </span>
+                      {row.failureCategory && (
+                        <p className="mt-1 text-xs text-slate-500">{row.failureCategory}</p>
+                      )}
+                    </td>
+                    <td className="border-b border-slate-200 px-2 py-2 align-top">{i.fileName}</td>
+                    <td className="border-b border-slate-200 px-2 py-2 align-top">{i.sourceType}</td>
+                    <td className="border-b border-slate-200 px-2 py-2 align-top">{i.status}</td>
+                    <td className="border-b border-slate-200 px-2 py-2 align-top text-slate-700">
+                      {row.detail ?? '—'}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
+          {state.imports.length === 0 && (
+            <p className="mt-2 text-sm text-slate-500">No files imported yet. Duplicate file skips do not add a row.</p>
+          )}
         </section>
       )}
 

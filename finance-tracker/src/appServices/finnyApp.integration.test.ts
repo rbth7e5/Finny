@@ -170,7 +170,7 @@ describe('TKT-019 integration (in-memory pipeline)', () => {
     const first = expectImportOk(await importPdfStatements(emptyState(), [new File(['1'], 'a.pdf')]))
     const second = expectImportOk(await importPdfStatements(first.next, [new File(['2'], 'b.pdf')]))
 
-    expect(second.userMessage).toMatch(/duplicate transaction row/i)
+    expect(second.session.skippedDuplicateTxnCount).toBeGreaterThan(0)
     expect(second.next.transactions.length).toBe(first.next.transactions.length)
   })
 })
