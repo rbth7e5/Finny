@@ -76,7 +76,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override; linked counterpart updated in sync; override clears `linkedTransactionId` |
 | **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` filters `NeedsReview`; `inferMonthKey` + `getMonthlyStatus` (`IMPORT_MISSING` / `RESOLVE_REVIEW` / `VIEW_SUMMARY`, ER §11) |
 | **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps: deeper parser edge cases, golden outputs (TKT-020) |
-| **TKT-019** | `appServices/finnyApp.test.ts` (partial) | In-memory import → reconcile user messaging; **no** SQLite / IPC round-trip yet |
+| **TKT-019** | `appServices/finnyApp.test.ts`, `appServices/finnyApp.integration.test.ts` | Import → reconcile (incl. DBS auto-match chain), re-import txn dedupe, monthly status → `resolveReviewItem` → `VIEW_SUMMARY`; **no** SQLite / IPC round-trip (TKT-025) |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
@@ -325,11 +325,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-007, TKT-008, TKT-009, TKT-010
 
 ### TKT-019 - Integration tests for import->reconcile->review
+- **Status:** DONE (service-layer integration in Vitest; persisted DB round-trip: **TKT-025**)
 - **Priority:** P0
 - **Type:** Quality
 - **TDD:** Required — integration scenarios written as failing tests first, then wiring until green ([Test-driven development](#test-driven-development-policy)).
 - **Description:** Build integration tests validating end-to-end pipeline and state persistence.
-- **Unit / integration tests:** Service-level only today — `finnyApp.test.ts` exercises import idempotency and user messages in memory; **no** automated SQLite/Tauri round-trip yet (see TKT-025).
+- **Unit / integration tests:** `finnyApp.test.ts` plus `finnyApp.integration.test.ts` (import → reconcile → `getMonthlyStatus` → `resolveReviewItem`, DBS matched-pair happy path, partial import set). **No** automated SQLite/Tauri round-trip yet (see TKT-025).
 - **Acceptance criteria:**
   - Re-import idempotency verified.
   - Review actions and monthly status flow verified.
@@ -376,7 +377,7 @@ Items intentionally left for TKT-025 rather than patched ad hoc:
 | TS / Rust model drift | Two hand-written `AppState` shapes; runtime serde errors possible if only one side changes. |
 | Stringly-typed fields in Rust | `source_type`, `kind`, etc. accept any string from IPC until validation exists. |
 | Full-replace save | Simple and correct for small data; may need incremental strategy for large ledgers. |
-| Automated tests | Vitest unit suite in `finance-tracker` (see [Automated unit tests](#automated-unit-tests-vitest)); no DB / IPC round-trip test yet — TKT-025 / TKT-019. |
+| Automated tests | Vitest unit + service integration in `finance-tracker` (see [Automated unit tests](#automated-unit-tests-vitest)); no DB / IPC round-trip test yet — **TKT-025**. |
 
 ## Dependency Graph (Simplified)
 
