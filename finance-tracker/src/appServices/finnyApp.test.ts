@@ -161,6 +161,84 @@ describe('resolveReviewItem (PRD manual review)', () => {
     expect(t.reconciliationState).toBe('UserOverridden')
     expect(t.spendImpact).toBe('TRANSFER')
   })
+
+  it('confirm updates linked card counterpart to UserConfirmed and SETTLEMENT_EXCLUDED', () => {
+    const state = emptyState()
+    state.transactions.push(
+      {
+        id: 'bank',
+        importId: 'i',
+        sourceType: 'UOB_BANK',
+        kind: 'BANK_SETTLEMENT',
+        amount: 100,
+        date: 'd',
+        description: 'pay card',
+        reconciliationState: 'NeedsReview',
+        spendImpact: 'UNRESOLVED_REVIEW',
+        linkedTransactionId: 'card',
+      },
+      {
+        id: 'card',
+        importId: 'i',
+        sourceType: 'UOB_CARD',
+        kind: 'CARD_CREDIT',
+        amount: 100,
+        date: 'd',
+        description: 'payment',
+        reconciliationState: 'NeedsReview',
+        spendImpact: 'UNRESOLVED_REVIEW',
+        linkedTransactionId: 'bank',
+      },
+    )
+    const next = resolveReviewItem(state, 'bank', 'confirm')
+    const b = next.transactions.find((x) => x.id === 'bank')!
+    const c = next.transactions.find((x) => x.id === 'card')!
+    expect(b.reconciliationState).toBe('UserConfirmed')
+    expect(b.spendImpact).toBe('SETTLEMENT_EXCLUDED')
+    expect(c.reconciliationState).toBe('UserConfirmed')
+    expect(c.spendImpact).toBe('SETTLEMENT_EXCLUDED')
+    expect(b.linkedTransactionId).toBe('card')
+    expect(c.linkedTransactionId).toBe('bank')
+  })
+
+  it('override clears link and sets counterpart spend for CARD_CREDIT to SPEND', () => {
+    const state = emptyState()
+    state.transactions.push(
+      {
+        id: 'bank',
+        importId: 'i',
+        sourceType: 'UOB_BANK',
+        kind: 'BANK_SETTLEMENT',
+        amount: 50,
+        date: 'd',
+        description: 'x',
+        reconciliationState: 'NeedsReview',
+        spendImpact: 'UNRESOLVED_REVIEW',
+        linkedTransactionId: 'card',
+      },
+      {
+        id: 'card',
+        importId: 'i',
+        sourceType: 'UOB_CARD',
+        kind: 'CARD_CREDIT',
+        amount: 50,
+        date: 'd',
+        description: 'y',
+        reconciliationState: 'NeedsReview',
+        spendImpact: 'UNRESOLVED_REVIEW',
+        linkedTransactionId: 'bank',
+      },
+    )
+    const next = resolveReviewItem(state, 'bank', 'override')
+    const b = next.transactions.find((x) => x.id === 'bank')!
+    const c = next.transactions.find((x) => x.id === 'card')!
+    expect(b.linkedTransactionId).toBeUndefined()
+    expect(c.linkedTransactionId).toBeUndefined()
+    expect(b.reconciliationState).toBe('UserOverridden')
+    expect(b.spendImpact).toBe('TRANSFER')
+    expect(c.reconciliationState).toBe('UserOverridden')
+    expect(c.spendImpact).toBe('SPEND')
+  })
 })
 
 describe('updateRuleProfile', () => {

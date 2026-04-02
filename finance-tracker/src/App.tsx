@@ -4,7 +4,7 @@ import {
   resolveReviewItem,
   updateRuleProfile,
 } from './appServices/finnyApp'
-import { getMonthlyCloseSummary, getReviewQueue } from './appServices/monthlyClose'
+import { getMonthlyCloseSummary, getMonthlyStatus, getReviewQueue } from './appServices/monthlyClose'
 import { DEFAULT_STATE } from './domain/defaults'
 import type { AppState } from './domain/types'
 import { TauriSqliteAdapter } from './storage/tauriSqliteAdapter'
@@ -34,6 +34,7 @@ function App() {
   const reviewItems = useMemo(() => getReviewQueue(state ?? DEFAULT_STATE), [state])
 
   const monthlyClose = useMemo(() => getMonthlyCloseSummary(state ?? DEFAULT_STATE), [state])
+  const monthlyStatus = useMemo(() => getMonthlyStatus(state ?? DEFAULT_STATE), [state])
 
   /** Applies state optimistically, persists, then rolls back UI if save fails. */
   async function patchState(next: AppState): Promise<boolean> {
@@ -149,12 +150,7 @@ function App() {
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-2 text-lg font-medium">Monthly Close</h2>
           <p className="mb-3 text-sm">
-            Continue monthly close:
-            {monthlyClose.missingCount > 0
-              ? ` ${monthlyClose.missingCount} required statements missing`
-              : reviewItems.length > 0
-                ? ` ${reviewItems.length} items need review`
-                : ' month ready'}
+            Continue monthly close ({monthlyStatus.monthKey}): {monthlyStatus.reasonText}
           </p>
           <ul className="mb-3 list-inside list-disc text-sm">
             {monthlyClose.requiredSources.map((src) => (

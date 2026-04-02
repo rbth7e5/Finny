@@ -73,8 +73,8 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-008** | `parsers/statementParser.test.ts` (+ fixtures) | Fixture-driven DBS bank/card/FAST-style lines (not full PDF corpus) |
 | **TKT-009** | `reconcile/reconcile.test.ts` | Ref-based `AutoMatched`; no match / ambiguous `NeedsReview`; `confidenceThreshold` behavior |
 | **TKT-010** | `utils/statementDate.test.ts`, `reconcile/reconcile.test.ts` | `parseStatementDate` / ISO + DD/MM/YYYY + month-name; `matchWindowDays` gates candidates in `reconcile`; parsers emit ISO when parse succeeds |
-| **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override → reconciliation state + spend impact (not full link persistence / both sides of a link) |
-| **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` filters `NeedsReview` |
+| **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override; linked counterpart updated in sync; override clears `linkedTransactionId` |
+| **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` filters `NeedsReview`; `inferMonthKey` + `getMonthlyStatus` (`IMPORT_MISSING` / `RESOLVE_REVIEW` / `VIEW_SUMMARY`, ER §11) |
 | **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps: deeper parser edge cases, golden outputs (TKT-020) |
 | **TKT-019** | `appServices/finnyApp.test.ts` (partial) | In-memory import → reconcile user messaging; **no** SQLite / IPC round-trip yet |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
@@ -214,21 +214,23 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-009
 
 ### TKT-011 - Implement review actions with linked-state integrity
+- **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend/Frontend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); extend service or integration tests before changing link persistence semantics.
 - **Description:** Ensure confirm/override decisions update both sides of a link (where applicable) and persist explainability.
-- **Unit tests:** `finnyApp.test.ts` (`resolveReviewItem` state transitions only; link symmetry and persistence not covered).
+- **Unit tests:** `finnyApp.test.ts` (`resolveReviewItem` including linked-bank/card symmetry; SQLite persistence still TKT-025).
 - **Acceptance criteria:**
   - Review actions maintain consistent link state.
   - State transitions follow `AutoMatched`, `NeedsReview`, `UserConfirmed`, `UserOverridden`.
 - **Dependencies:** TKT-009, TKT-004
 
 ### TKT-012 - Home status service (`Continue monthly close`)
+- **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend/Frontend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy).
-- **Description:** Implement deterministic monthly status contract (`IMPORT_MISSING`, `RESOLVE_REVIEW`, `VIEW_SUMMARY`) and reason text.
+- **Description:** Implement deterministic monthly status contract (`IMPORT_MISSING`, `RESOLVE_REVIEW`, `VIEW_SUMMARY`) and reason text (`getMonthlyStatus` + `inferMonthKey` in `monthlyClose.ts`; Home uses `reasonText` and `monthKey`).
 - **Unit tests:** `monthlyClose.test.ts`.
 - **Acceptance criteria:**
   - Home CTA route reason matches status contract.

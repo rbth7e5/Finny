@@ -97,11 +97,43 @@ export function resolveReviewItem(
 ): AppState {
   const reconciliationState: ReconciliationState =
     action === 'confirm' ? 'UserConfirmed' : 'UserOverridden'
-  const spendImpact: SpendImpact = action === 'confirm' ? 'SETTLEMENT_EXCLUDED' : 'TRANSFER'
+  const primarySpend: SpendImpact = action === 'confirm' ? 'SETTLEMENT_EXCLUDED' : 'TRANSFER'
+
+  const byId = new Map(state.transactions.map((t) => [t.id, t]))
+  const primary = byId.get(itemId)
+  if (!primary) return state
+
+  const partnerId = primary.linkedTransactionId
+  const partner = partnerId ? byId.get(partnerId) : undefined
+
   const transactions = state.transactions.map((t) => {
-    if (t.id !== itemId) return t
-    return { ...t, reconciliationState, spendImpact }
+    if (t.id === itemId) {
+      const unlink = action === 'override' && Boolean(partner)
+      return {
+        ...t,
+        reconciliationState,
+        spendImpact: primarySpend,
+        ...(unlink ? { linkedTransactionId: undefined } : {}),
+      }
+    }
+    if (partner && t.id === partner.id) {
+      if (action === 'confirm') {
+        const rs: ReconciliationState = 'UserConfirmed'
+        const si: SpendImpact = 'SETTLEMENT_EXCLUDED'
+        return { ...t, reconciliationState: rs, spendImpact: si }
+      }
+      const partnerSpend: SpendImpact = t.kind === 'CARD_CREDIT' ? 'SPEND' : 'TRANSFER'
+      const rs: ReconciliationState = 'UserOverridden'
+      return {
+        ...t,
+        reconciliationState: rs,
+        spendImpact: partnerSpend,
+        linkedTransactionId: undefined,
+      }
+    }
+    return t
   })
+
   return { ...state, transactions }
 }
 
