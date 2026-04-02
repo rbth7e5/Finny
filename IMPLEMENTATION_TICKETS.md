@@ -15,11 +15,70 @@ References:
 - Persistence: Tauri uses SQLite under the app data directory (`src-tauri/src/db.rs`); development is **Tauri-only** (no standalone-browser persistence path).
 - Initial load and save failures surface in the UI (empty workspace fallback on load failure; optimistic save with rollback on write failure).
 - **Dev workflow:** Tauri-only (`npx tauri dev`). The browser-localStorage adapter and factory were removed; standalone `npm run dev` in a tab is not a supported persistence path.
+- **Imports:** SHA-256 file hash on each import (SQLite `content_hash`); duplicate successful files are skipped. Transaction fingerprints dedupe re-imported rows. Parsing goes through `runStatementPipeline` → `parseTransactionsForSource` by source type.
+- **Process:** New behavior follows **test-driven development** (see [Test-driven development](#test-driven-development-policy)); each backlog ticket states how TDD applies.
 
 ## Ticket Legend
 
 - Priority: `P0` (must-have), `P1` (important), `P2` (nice-to-have for v1 hardening)
 - Type: `Foundation`, `Backend`, `Frontend`, `Quality`, `Release`
+- **TDD:** Every ticket includes a **TDD** line. Behavior-changing work uses red → green → refactor; details and exemptions are in [Test-driven development](#test-driven-development-policy).
+
+## Test-driven development (policy)
+
+Finny treats **test-driven development** as the default way to land code: express the requirement as an automated check first, implement until it passes, then refactor with tests green.
+
+### Workflow
+
+1. **Red:** Add or extend an automated test that fails under the current code (or documents a bug).
+2. **Green:** Implement the smallest change that makes the suite pass (including `npm run test` in `finance-tracker`, and `cargo test` in `src-tauri` when Rust changes).
+3. **Refactor:** Improve structure without changing behavior, keeping tests green.
+
+Tests should land in the **same change** as the implementation (same PR / same merge), not in a follow-up unless the ticket explicitly splits “spike” vs “harden” (avoid shipping untested behavior).
+
+### Where tests live
+
+| Area | Convention |
+|------|------------|
+| TypeScript logic, parsers, services, UI-free hooks | Vitest: `src/**/*.test.ts` (see [Automated unit tests](#automated-unit-tests-vitest)) |
+| Rust DB, migrations, IPC | `cargo test` / integration tests (see TKT-025, TKT-019) |
+| React UI | Prefer extracting testable logic into functions covered by Vitest; add component or E2E coverage when the ticket is UI-primary (TKT-013–015) |
+
+### Definition of Done (with TDD)
+
+- A ticket is not **DONE** until its **TDD** acceptance is met: new or fixed behavior has matching automated coverage, and documented manual steps are only allowed where the policy exempts automation.
+- **Legacy tickets** already marked DONE before this policy were not all implemented with TDD; any **reopen** or **follow-up** on those areas must follow this policy. Backfill coverage is tracked under TKT-018, TKT-019, and TKT-025 as appropriate.
+
+### Tickets whose primary output is tests or release glue
+
+- **TKT-018 / TKT-019 / TKT-020:** Deliverable is the suite or golden outputs — still follow red → green (add failing scenario first, then implement or fix production code until green).
+- **TKT-021:** Automate what is practical (e.g. CI build of the installer); document repeatable manual smoke where automation is costly.
+- **TKT-022:** Checklist must explicitly include **all automated tests passing**; other items may remain manual sign-off.
+
+### Exemptions
+
+- **Documentation-only** edits (no code or config that affects build/runtime) do not require new tests.
+- **TKT-022** does not require new test *code* by itself, but must require verification that existing suites pass.
+
+## Automated unit tests (Vitest)
+
+Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live under `src/**/*.test.ts` with shared text fixtures in `src/test/fixtures/statements.ts`.
+
+| Ticket | Test file(s) | What is covered |
+|--------|---------------|-----------------|
+| **TKT-005** | `utils/fileHash.test.ts`, `import/transactionFingerprint.test.ts`, `appServices/finnyApp.test.ts` | SHA-256 hex helper; fingerprint stability/set; duplicate file skip, failed-import retry, duplicate row skip on re-import |
+| **TKT-006** | `parsers/pipeline.test.ts`, `parsers/statementParser.test.ts` | Source detection; `runStatementPipeline` warnings and dispatch |
+| **TKT-007** | `parsers/statementParser.test.ts` (+ fixtures) | Fixture-driven UOB bank/card line patterns (not full PDF corpus) |
+| **TKT-008** | `parsers/statementParser.test.ts` (+ fixtures) | Fixture-driven DBS bank/card/FAST-style lines (not full PDF corpus) |
+| **TKT-009** | `reconcile/reconcile.test.ts` | Ref-based `AutoMatched`; no match / ambiguous `NeedsReview`; `confidenceThreshold` behavior |
+| **TKT-010** | — | *Not yet:* reconcile tests pass `matchWindowDays` in profile but do not assert date-window boundary cases |
+| **TKT-011** | `appServices/finnyApp.test.ts` | `resolveReviewItem` confirm vs override → reconciliation state + spend impact (not full link persistence / both sides of a link) |
+| **TKT-012** | `appServices/monthlyClose.test.ts` | `getMonthlyCloseSummary` (four sources, FAILED imports ignored); `getReviewQueue` filters `NeedsReview` |
+| **TKT-018** | *See rows above* | Parser + pipeline + reconcile + fingerprint/hash + monthly close + import orchestration; gaps noted for TKT-010 and deeper parser/reconcile cases |
+| **TKT-019** | `appServices/finnyApp.test.ts` (partial) | In-memory import → reconcile user messaging; **no** SQLite / IPC round-trip yet |
+| **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
+
+Tickets not listed here have **no** dedicated automated tests in the repo yet.
 
 ## Ticket Backlog
 
@@ -27,6 +86,7 @@ References:
 - **Status:** DONE
 - **Priority:** P0
 - **Type:** Foundation
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy).
 - **Description:** Split current monolithic `App.tsx` into module boundaries: `parsers`, `reconcile`, `storage`, `domain`, `ui` to align with architecture requirements.
 - **Acceptance criteria:**
   - `App.tsx` contains composition and UI flow only.
@@ -38,6 +98,7 @@ References:
 - **Status:** DONE
 - **Priority:** P0
 - **Type:** Foundation
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); exercise types via consumer tests (parsers, services, or contract tests), not “types-only” trivia.
 - **Description:** Create canonical domain types (`ImportRecord`, `Transaction`, `ReconciliationLink`, `RuleProfile`, `MonthlyStatus`, enums).
 - **Acceptance criteria:**
   - All modules consume shared types from one location.
@@ -48,6 +109,7 @@ References:
 - **Status:** DONE
 - **Priority:** P0
 - **Type:** Foundation
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); verify behavior with a fake or mock adapter and/or integration tests (TKT-019/025).
 - **Description:** Define `StorageAdapter` interface with methods for imports, transactions, links, settings, monthly status.
 - **Acceptance criteria:**
   - UI and services depend on the storage interface, not on SQLite or IPC details.
@@ -57,6 +119,7 @@ References:
 - **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); Rust-side tests (temp DB, migrations, round-trip) per TKT-025 — land failing test first for new schema or IPC behavior.
 - **Description:** Persist application state in Tauri-side SQLite with schema migrations.
 - **Acceptance criteria:**
   - App data persists in SQLite file in local app directory.
@@ -67,6 +130,7 @@ References:
 ### TKT-025 - Persistence and IPC contract hardening
 - **Priority:** P1
 - **Type:** Quality / Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); acceptance criteria tests drive contract and migration fixes (red → green in Rust first where feasible).
 - **Description:** Follow-up work after SQLite integration: reduce drift and operational risk beyond the v0 vertical slice.
 - **Acceptance criteria:**
   - **Domain parity:** Rust `AppState` (`src-tauri/src/state.rs`) and TypeScript `domain/types.ts` stay aligned (choose one: generated types from a single source, JSON Schema validation on IPC, or automated contract / round-trip tests).
@@ -77,18 +141,24 @@ References:
 - **Dependencies:** TKT-004
 
 ### TKT-005 - Implement idempotent import guardrails
+- **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy).
 - **Description:** Add file-hash based duplicate detection and normalized transaction hash dedupe to prevent duplicate rows on re-import.
+- **Unit tests:** `fileHash.test.ts`, `transactionFingerprint.test.ts`, `finnyApp.test.ts` (see [Automated unit tests](#automated-unit-tests-vitest)).
 - **Acceptance criteria:**
   - Re-importing same file adds no duplicate transactions.
   - Duplicate import result is visible to user as non-destructive outcome.
 - **Dependencies:** TKT-004
 
 ### TKT-006 - Build parser pipeline framework
+- **Status:** DONE
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy).
 - **Description:** Introduce parser contract and parser registry by source type (`UOB_BANK`, `UOB_CARD`, `DBS_BANK`, `DBS_CARD`).
+- **Unit tests:** `pipeline.test.ts`, `statementParser.test.ts`.
 - **Acceptance criteria:**
   - `parse(file) -> ParsedDocument + ParsedEvents + warnings`.
   - Source detection and parser dispatch are isolated from UI.
@@ -97,7 +167,9 @@ References:
 ### TKT-007 - Harden UOB PDF parsers (bank + card)
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); add fixture text and failing parser expectations before changing extraction logic.
 - **Description:** Implement robust UOB extraction using section-aware parsing, multiline handling, and boilerplate filtering.
+- **Unit tests:** `statementParser.test.ts` + `src/test/fixtures/statements.ts` (text snippets only; not full PDF golden files).
 - **Acceptance criteria:**
   - Extract known UOB settlement/payment markers reliably.
   - Ignore non-transaction page noise.
@@ -107,7 +179,9 @@ References:
 ### TKT-008 - Harden DBS/POSB PDF parsers (bank + card)
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); add fixture text and failing parser expectations before changing extraction logic.
 - **Description:** Implement robust DBS/POSB extraction, including consolidated statement section filtering and reference extraction.
+- **Unit tests:** `statementParser.test.ts` + fixtures (text snippets only; not full PDF golden files).
 - **Acceptance criteria:**
   - Extract DBS bill payment markers and `REF`/`REF NO`.
   - Exclude SRS/informational sections from deposit ledger rows.
@@ -117,7 +191,9 @@ References:
 ### TKT-009 - Implement deterministic reconciliation engine v1
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy).
 - **Description:** Build reconciliation service with one-to-one default and review fallback, confidence scoring, and explainability payload.
+- **Unit tests:** `reconcile.test.ts`.
 - **Acceptance criteria:**
   - Supports UOB and DBS matching evidence.
   - `NeedsReview` on ambiguous/low-confidence cases.
@@ -127,7 +203,9 @@ References:
 ### TKT-010 - Implement real date normalization and match window logic
 - **Priority:** P0
 - **Type:** Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); add failing `reconcile` (or date-helper) tests for window boundaries before changing matching logic.
 - **Description:** Parse transaction dates into structured values and apply `matchWindowDays` in candidate matching.
+- **Unit tests:** None yet (reconcile tests use a fixed `matchWindowDays` in profile without asserting window boundaries).
 - **Acceptance criteria:**
   - Date parsing is deterministic for supported formats.
   - `matchWindowDays` actively affects reconciliation outcomes.
@@ -136,7 +214,9 @@ References:
 ### TKT-011 - Implement review actions with linked-state integrity
 - **Priority:** P0
 - **Type:** Backend/Frontend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); extend service or integration tests before changing link persistence semantics.
 - **Description:** Ensure confirm/override decisions update both sides of a link (where applicable) and persist explainability.
+- **Unit tests:** `finnyApp.test.ts` (`resolveReviewItem` state transitions only; link symmetry and persistence not covered).
 - **Acceptance criteria:**
   - Review actions maintain consistent link state.
   - State transitions follow `AutoMatched`, `NeedsReview`, `UserConfirmed`, `UserOverridden`.
@@ -145,7 +225,9 @@ References:
 ### TKT-012 - Home status service (`Continue monthly close`)
 - **Priority:** P0
 - **Type:** Backend/Frontend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy).
 - **Description:** Implement deterministic monthly status contract (`IMPORT_MISSING`, `RESOLVE_REVIEW`, `VIEW_SUMMARY`) and reason text.
+- **Unit tests:** `monthlyClose.test.ts`.
 - **Acceptance criteria:**
   - Home CTA route reason matches status contract.
   - Status computed from imports + unresolved review counts.
@@ -154,6 +236,7 @@ References:
 ### TKT-013 - Import UI hardening and feedback states
 - **Priority:** P1
 - **Type:** Frontend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); cover user-visible outcomes with component tests, Vitest-tested view-model helpers, or a thin E2E/smoke path — avoid merging UI-only behavior with no automated check.
 - **Description:** Improve import screen with per-file status, warnings, duplicate/reprocess messaging, and failure categories.
 - **Acceptance criteria:**
   - User can distinguish success, partial, failed, duplicate outcomes.
@@ -164,6 +247,7 @@ References:
 ### TKT-014 - Review queue UX hardening
 - **Priority:** P1
 - **Type:** Frontend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); same stack expectations as TKT-013 (extracted logic in Vitest where possible).
 - **Description:** Add reason codes, confidence, extracted markers (card token/reference), stable ordering, and empty state polish.
 - **Acceptance criteria:**
   - Each review item shows what/why/spend impact.
@@ -173,6 +257,7 @@ References:
 ### TKT-015 - Ledger + detail explainability view
 - **Priority:** P1
 - **Type:** Frontend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); same stack expectations as TKT-013 (extracted logic in Vitest where possible).
 - **Description:** Add ledger filters and detail drawer/page with source trace and reconciliation explanation contract.
 - **Acceptance criteria:**
   - Filter by account/source, needs review, settlement-related.
@@ -183,6 +268,7 @@ References:
 ### TKT-016 - Rule profile settings (MVP-minimum)
 - **Priority:** P1
 - **Type:** Frontend/Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); failing tests for persistence + reconciliation effect (Vitest and/or Rust integration) before implementation.
 - **Description:** Finalize MVP settings for match window, confidence threshold, and card payment source mappings.
 - **Acceptance criteria:**
   - Settings persist via storage layer.
@@ -192,6 +278,7 @@ References:
 ### TKT-023 - Advanced rule profile options (Post-v1)
 - **Priority:** P2
 - **Type:** Frontend/Backend
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); same as TKT-016 — tests first for rule evaluation and persistence.
 - **Description:** Add advanced configurable rules such as transfer patterns, salary source account, and richer description pattern controls.
 - **Acceptance criteria:**
   - Advanced fields are configurable and validated.
@@ -202,7 +289,9 @@ References:
 - **Status:** DONE
 - **Priority:** P0
 - **Type:** Foundation
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); new service entry points ship with Vitest coverage in the same change.
 - **Description:** Add an `appServices` layer so UI calls use-case functions only (for example `importStatements`, `resolveReviewItem`, `getMonthlyStatus`) and does not orchestrate parser/reconcile/storage directly.
+- **Unit tests:** `finnyApp.test.ts`, `monthlyClose.test.ts`.
 - **Acceptance criteria:**
   - `App.tsx` (and future UI components) consume service methods instead of directly calling parser/reconcile/storage modules.
   - Service layer owns orchestration order and error mapping for import and review workflows.
@@ -213,6 +302,7 @@ References:
 - **Status:** DONE
 - **Priority:** P1
 - **Type:** Quality
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); config changes must keep **CI build / dev smoke** green (failing pipeline = red); document any manual security verification in acceptance criteria.
 - **Description:** Replace `csp: null` with least-privilege CSP and verify no unnecessary capabilities.
 - **Acceptance criteria:**
   - Tauri config has explicit CSP policy.
@@ -222,6 +312,8 @@ References:
 ### TKT-018 - Unit tests for parser and reconciliation core
 - **Priority:** P0
 - **Type:** Quality
+- **TDD:** Required — primary deliverable is tests; add failing cases first, then fix code until green ([Test-driven development](#test-driven-development-policy)).
+- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring, fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Remaining: explicit date/`matchWindowDays` tests (TKT-010), broader parser edge cases, optional golden outputs (TKT-020).
 - **Description:** Add unit tests for source detection, parser extraction, date normalization, matching precedence, and review fallback.
 - **Acceptance criteria:**
   - Test suite covers UOB and DBS sample-driven cases.
@@ -231,7 +323,9 @@ References:
 ### TKT-019 - Integration tests for import->reconcile->review
 - **Priority:** P0
 - **Type:** Quality
+- **TDD:** Required — integration scenarios written as failing tests first, then wiring until green ([Test-driven development](#test-driven-development-policy)).
 - **Description:** Build integration tests validating end-to-end pipeline and state persistence.
+- **Unit / integration tests:** Service-level only today — `finnyApp.test.ts` exercises import idempotency and user messages in memory; **no** automated SQLite/Tauri round-trip yet (see TKT-025).
 - **Acceptance criteria:**
   - Re-import idempotency verified.
   - Review actions and monthly status flow verified.
@@ -240,6 +334,7 @@ References:
 ### TKT-020 - Acceptance test fixtures and golden outputs
 - **Priority:** P0
 - **Type:** Quality
+- **TDD:** Required — check in expected golden output (or snapshot) first or alongside parser/reconcile changes so CI fails on drift ([Test-driven development](#test-driven-development-policy)).
 - **Description:** Add anonymized fixtures and expected outputs for UOB/DBS settlement + transfer scenarios.
 - **Acceptance criteria:**
   - Golden files maintained for expected links/totals.
@@ -249,6 +344,7 @@ References:
 ### TKT-021 - Windows packaging and installer smoke tests
 - **Priority:** P0
 - **Type:** Release
+- **TDD:** Per [Test-driven development](#test-driven-development-policy) — automate build/installer verification in CI where feasible; document repeatable manual smoke for gaps.
 - **Description:** Build Tauri Windows package and validate install/launch/update (manual reinstall) workflow.
 - **Acceptance criteria:**
   - Installer builds successfully.
@@ -258,11 +354,13 @@ References:
 ### TKT-022 - v1 release readiness checklist
 - **Priority:** P0
 - **Type:** Release
+- **TDD:** Per [Test-driven development](#test-driven-development-policy) — checklist must require **all automated tests pass** before sign-off; no new product code in this ticket.
 - **Description:** Consolidate go/no-go checks: docs alignment, test pass, known issues, migration notes, rollback instructions.
 - **Acceptance criteria:**
   - Checklist approved and signed off.
   - Release candidate tagged and archived.
   - Locked v1 constraints verified in checklist: `Tauri`, `PDF-first`, `one-to-one + review fallback`, `manual reinstall updates`.
+  - Checklist explicitly gates on **all automated tests passing** (`npm run test` in `finance-tracker`, `cargo test` in `src-tauri` when Rust changed).
 - **Dependencies:** TKT-021
 
 ## Follow-up engineering (review notes, tracked as TKT-025)
@@ -274,7 +372,7 @@ Items intentionally left for TKT-025 rather than patched ad hoc:
 | TS / Rust model drift | Two hand-written `AppState` shapes; runtime serde errors possible if only one side changes. |
 | Stringly-typed fields in Rust | `source_type`, `kind`, etc. accept any string from IPC until validation exists. |
 | Full-replace save | Simple and correct for small data; may need incremental strategy for large ledgers. |
-| Automated tests | No DB round-trip test yet; fold into TKT-018 scope or TKT-025 acceptance criteria. |
+| Automated tests | Vitest unit suite in `finance-tracker` (see [Automated unit tests](#automated-unit-tests-vitest)); no DB / IPC round-trip test yet — TKT-025 / TKT-019. |
 
 ## Dependency Graph (Simplified)
 
@@ -325,6 +423,8 @@ flowchart TD
 
 ## Execution Strategy
 
+All phases follow [Test-driven development](#test-driven-development-policy): do not merge behavior changes without the corresponding automated tests in the same delivery.
+
 ### Phase 1 - Stabilize core architecture (Week 1)
 - Execute: TKT-001, TKT-002, TKT-003, TKT-004, TKT-017
 - Goal: remove prototype risks (localStorage, monolith, weak security defaults).
@@ -345,6 +445,8 @@ flowchart TD
 
 If turnaround must be extremely fast, cut to a minimum critical path:
 - TKT-001, TKT-003, TKT-004, TKT-006, TKT-007, TKT-008, TKT-009, TKT-010, TKT-005, TKT-011, TKT-012, TKT-018, TKT-021
+
+**TDD is not optional on the fast-track** — scope is reduced, not test discipline. Same merge rules as [Test-driven development](#test-driven-development-policy).
 
 Minimum fixture baseline still required in fast-track:
 - At least one UOB bank/card sample pair and one DBS bank/card sample pair in test fixtures.

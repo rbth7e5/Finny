@@ -1,0 +1,162 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  EMPTY_STATE_PROFILE,
+  UOB_BANK_BILL_PAYMENT,
+  UOB_BANK_HEADER,
+} from '../test/fixtures/statements'
+
+const hoisted = vi.hoisted(() => ({ createIdSeq: 0 }))
+
+vi.mock('../parsers/pdfText', () => ({
+  readPdfText: vi.fn(),
+}))
+
+vi.mock('../utils/fileHash', () => ({
+  sha256HexOfFile: vi.fn(),
+}))
+
+vi.mock('../utils/ids', () => ({
+  createId: (prefix: string) => {
+    hoisted.createIdSeq += 1
+    return `${prefix}-id-${hoisted.createIdSeq}`
+  },
+}))
+
+import { readPdfText } from '../parsers/pdfText'
+import { sha256HexOfFile } from '../utils/fileHash'
+import { importPdfStatements, resolveReviewItem, updateRuleProfile } from './finnyApp'
+
+const readPdfTextMock = vi.mocked(readPdfText)
+const sha256Mock = vi.mocked(sha256HexOfFile)
+
+const emptyState = () => ({
+  imports: [] as import('../domain/types').ImportRecord[],
+  transactions: [] as import('../domain/types').Transaction[],
+  profile: { ...EMPTY_STATE_PROFILE },
+})
+
+describe('importPdfStatements (PRD Scenario B / FR-2 duplicate handling)', () => {
+  beforeEach(() => {
+    hoisted.createIdSeq = 0
+    vi.clearAllMocks()
+  })
+
+  it('imports PDFs, parses, reconciles, and sets contentHash on success', async () => {
+    sha256Mock.mockResolvedValue('hash-new-1')
+    readPdfTextMock.mockResolvedValue(`${UOB_BANK_HEADER}\n${UOB_BANK_BILL_PAYMENT}`)
+
+    const r = await importPdfStatements(emptyState(), [new File(['x'], 'stmt.pdf', { type: 'application/pdf' })])
+
+    expect(r.ok).toBe(true)
+    expect(r.next.imports).toHaveLength(1)
+    expect(r.next.imports[0]!.contentHash).toBe('hash-new-1')
+    expect(r.next.imports[0]!.status).toBe('SUCCESS')
+    expect(r.next.transactions.length).toBeGreaterThanOrEqual(1)
+    expect(r.userMessage).toMatch(/Import complete/)
+  })
+
+  it('skips duplicate file when same hash already imported successfully (non-destructive)', async () => {
+    const state = emptyState()
+    state.imports.push({
+      id: 'imp-existing',
+      fileName: 'first.pdf',
+      sourceType: 'UOB_BANK',
+      importedAt: '2020-01-01',
+      status: 'SUCCESS',
+      contentHash: 'same-hash',
+    })
+
+    sha256Mock.mockResolvedValue('same-hash')
+    const r = await importPdfStatements(state, [new File(['y'], 'dup.pdf', { type: 'application/pdf' })])
+
+    expect(r.ok).toBe(true)
+    expect(r.next.imports).toHaveLength(1)
+    expect(readPdfTextMock).not.toHaveBeenCalled()
+    expect(r.userMessage).toMatch(/Skipped 1 duplicate file/i)
+  })
+
+  it('does not skip duplicate hash if prior import failed (allows retry)', async () => {
+    const state = emptyState()
+    state.imports.push({
+      id: 'imp-fail',
+      fileName: 'bad.pdf',
+      sourceType: 'UNKNOWN',
+      importedAt: '2020-01-01',
+      status: 'FAILED',
+      contentHash: 'retry-hash',
+    })
+
+    sha256Mock.mockResolvedValue('retry-hash')
+    readPdfTextMock.mockResolvedValue(`${UOB_BANK_HEADER}\n${UOB_BANK_BILL_PAYMENT}`)
+
+    const r = await importPdfStatements(state, [new File(['z'], 'retry.pdf', { type: 'application/pdf' })])
+
+    expect(r.ok).toBe(true)
+    expect(r.next.imports.length).toBe(2)
+    expect(readPdfTextMock).toHaveBeenCalled()
+  })
+
+  it('skips transaction rows that fingerprint-match existing ledger', async () => {
+    sha256Mock.mockResolvedValueOnce('h-a').mockResolvedValueOnce('h-b')
+    const text = `${UOB_BANK_HEADER}\n${UOB_BANK_BILL_PAYMENT}`
+    readPdfTextMock.mockResolvedValue(text)
+
+    const first = await importPdfStatements(emptyState(), [new File(['1'], 'a.pdf')])
+    expect(first.ok).toBe(true)
+    const nAfterFirst = first.next.transactions.length
+
+    const second = await importPdfStatements(first.next, [new File(['2'], 'b.pdf')])
+    expect(second.ok).toBe(true)
+    expect(second.next.transactions.length).toBe(nAfterFirst)
+    expect(second.userMessage).toMatch(/duplicate transaction row/i)
+  })
+})
+
+describe('resolveReviewItem (PRD manual review)', () => {
+  it('confirm sets UserConfirmed and SETTLEMENT_EXCLUDED', () => {
+    const state = emptyState()
+    state.transactions.push({
+      id: 't1',
+      importId: 'i',
+      sourceType: 'UOB_BANK',
+      kind: 'BANK_SETTLEMENT',
+      amount: 1,
+      date: 'd',
+      description: 'x',
+      reconciliationState: 'NeedsReview',
+      spendImpact: 'UNRESOLVED_REVIEW',
+    })
+    const next = resolveReviewItem(state, 't1', 'confirm')
+    const t = next.transactions.find((x) => x.id === 't1')!
+    expect(t.reconciliationState).toBe('UserConfirmed')
+    expect(t.spendImpact).toBe('SETTLEMENT_EXCLUDED')
+  })
+
+  it('override sets UserOverridden and TRANSFER', () => {
+    const state = emptyState()
+    state.transactions.push({
+      id: 't2',
+      importId: 'i',
+      sourceType: 'UOB_BANK',
+      kind: 'BANK_SETTLEMENT',
+      amount: 2,
+      date: 'd',
+      description: 'y',
+      reconciliationState: 'NeedsReview',
+      spendImpact: 'UNRESOLVED_REVIEW',
+    })
+    const next = resolveReviewItem(state, 't2', 'override')
+    const t = next.transactions.find((x) => x.id === 't2')!
+    expect(t.reconciliationState).toBe('UserOverridden')
+    expect(t.spendImpact).toBe('TRANSFER')
+  })
+})
+
+describe('updateRuleProfile', () => {
+  it('merges profile fields', () => {
+    const s = emptyState()
+    const next = updateRuleProfile(s, { matchWindowDays: 12 })
+    expect(next.profile.matchWindowDays).toBe(12)
+    expect(next.profile.confidenceThreshold).toBe(EMPTY_STATE_PROFILE.confidenceThreshold)
+  })
+})

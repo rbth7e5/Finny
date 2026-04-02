@@ -17,6 +17,8 @@ pub struct ImportRecord {
     pub imported_at: String,
     pub status: String,
     pub warning: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

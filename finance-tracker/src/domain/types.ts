@@ -15,6 +15,8 @@ export type ImportRecord = {
   importedAt: string
   status: 'SUCCESS' | 'FAILED'
   warning?: string
+  /** SHA-256 (hex) of raw PDF bytes; used to skip duplicate file re-imports. */
+  contentHash?: string
 }
 
 export type TransactionKind = 'BANK_SETTLEMENT' | 'CARD_CREDIT' | 'TRANSFER'

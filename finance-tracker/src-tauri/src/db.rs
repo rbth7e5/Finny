@@ -16,13 +16,10 @@ pub fn open_connection(app: &AppHandle) -> Result<Connection, String> {
 }
 
 pub fn migrate(conn: &Connection) -> Result<(), rusqlite::Error> {
-    let v: i32 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
-    if v >= 1 {
-        return Ok(());
-    }
-
-    conn.execute_batch(
-        r#"
+    let mut v: i32 = conn.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if v < 1 {
+        conn.execute_batch(
+            r#"
         CREATE TABLE rule_profile (
           id INTEGER PRIMARY KEY CHECK (id = 1),
           match_window_days INTEGER NOT NULL,
@@ -72,9 +69,17 @@ pub fn migrate(conn: &Connection) -> Result<(), rusqlite::Error> {
           detail_json TEXT NOT NULL DEFAULT '{}'
         );
         "#,
-    )?;
+        )?;
 
-    conn.pragma_update(None, "user_version", 1)?;
+        conn.pragma_update(None, "user_version", 1)?;
+        v = 1;
+    }
+
+    if v < 2 {
+        conn.execute("ALTER TABLE imports ADD COLUMN content_hash TEXT", [])?;
+        conn.pragma_update(None, "user_version", 2)?;
+    }
+
     Ok(())
 }
 
@@ -94,7 +99,7 @@ pub fn load_state(conn: &Connection) -> Result<AppState, String> {
 
     let mut imp_stmt = conn
         .prepare(
-            "SELECT id, file_name, source_type, imported_at, status, warning FROM imports ORDER BY imported_at",
+            "SELECT id, file_name, source_type, imported_at, status, warning, content_hash FROM imports ORDER BY imported_at",
         )
         .map_err(|e| e.to_string())?;
     let imports: Vec<ImportRecord> = imp_stmt
@@ -106,6 +111,7 @@ pub fn load_state(conn: &Connection) -> Result<AppState, String> {
                 imported_at: row.get(3)?,
                 status: row.get(4)?,
                 warning: row.get(5)?,
+                content_hash: row.get(6)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -155,15 +161,16 @@ pub fn save_state(conn: &mut Connection, state: &AppState) -> Result<(), rusqlit
 
     for i in &state.imports {
         tx.execute(
-            "INSERT INTO imports (id, file_name, source_type, imported_at, status, warning)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO imports (id, file_name, source_type, imported_at, status, warning, content_hash)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 i.id,
                 i.file_name,
                 i.source_type,
                 i.imported_at,
                 i.status,
-                i.warning
+                i.warning,
+                i.content_hash
             ],
         )?;
     }

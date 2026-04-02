@@ -1,42 +1,89 @@
 import type { AppState, ReconciliationState, SpendImpact } from '../domain/types'
+import { buildTransactionFingerprintSet, transactionFingerprint } from '../import/transactionFingerprint'
 import { readPdfText } from '../parsers/pdfText'
-import { detectSource, parseTransactions } from '../parsers/statementParser'
+import { runStatementPipeline } from '../parsers/pipeline'
 import { createId } from '../utils/ids'
+import { sha256HexOfFile } from '../utils/fileHash'
 import { reconcile } from '../reconcile/reconcile'
 
 export type ImportPdfResult =
   | { ok: true; next: AppState; userMessage: string }
   | { ok: false; userMessage: string }
 
+function hasSuccessfulImportWithHash(imports: AppState['imports'], hash: string): boolean {
+  return imports.some((i) => i.contentHash === hash && i.status === 'SUCCESS')
+}
+
 /**
- * Orchestrates PDF extraction, source detection, parsing, and reconciliation.
- * UI should call this instead of touching parsers/reconcile directly.
+ * Orchestrates PDF extraction, source detection, parsing, dedupe, and reconciliation.
  */
 export async function importPdfStatements(current: AppState, files: File[]): Promise<ImportPdfResult> {
   try {
     const imports = [...current.imports]
     const txns = [...current.transactions]
+    const fpSeen = buildTransactionFingerprintSet(txns)
+    const skippedDuplicateFiles: string[] = []
+    let skippedDuplicateTxnCount = 0
+
     for (const file of files) {
+      const contentHash = await sha256HexOfFile(file)
+      if (hasSuccessfulImportWithHash(imports, contentHash)) {
+        skippedDuplicateFiles.push(file.name)
+        continue
+      }
+
       const text = await readPdfText(file)
-      const sourceType = detectSource(text)
       const importId = createId('imp')
+      const { sourceType, transactions: parsed, warnings } = runStatementPipeline(text, importId)
+
+      const status = sourceType === 'UNKNOWN' ? 'FAILED' : 'SUCCESS'
+      const warning =
+        sourceType === 'UNKNOWN'
+          ? 'Unrecognized statement format'
+          : warnings.length
+            ? warnings.join(' ')
+            : undefined
+
       imports.push({
         id: importId,
         fileName: file.name,
         sourceType,
         importedAt: new Date().toISOString(),
-        status: sourceType === 'UNKNOWN' ? 'FAILED' : 'SUCCESS',
-        warning: sourceType === 'UNKNOWN' ? 'Unrecognized statement format' : undefined,
+        status,
+        warning,
+        contentHash,
       })
-      if (sourceType !== 'UNKNOWN') {
-        txns.push(...parseTransactions(text, sourceType, importId))
+
+      if (sourceType === 'UNKNOWN') continue
+
+      for (const t of parsed) {
+        const fp = transactionFingerprint(t)
+        if (fpSeen.has(fp)) {
+          skippedDuplicateTxnCount += 1
+          continue
+        }
+        fpSeen.add(fp)
+        txns.push(t)
       }
     }
+
     const reconciled = reconcile(txns, current.profile)
+
+    const parts: string[] = []
+    parts.push(`Import complete. ${reconciled.reviewCount} item(s) need review.`)
+    if (skippedDuplicateFiles.length) {
+      parts.push(
+        `Skipped ${skippedDuplicateFiles.length} duplicate file(s) (already imported): ${skippedDuplicateFiles.join(', ')}.`,
+      )
+    }
+    if (skippedDuplicateTxnCount) {
+      parts.push(`Skipped ${skippedDuplicateTxnCount} duplicate transaction row(s) already in the ledger.`)
+    }
+
     return {
       ok: true,
       next: { ...current, imports, transactions: reconciled.updated },
-      userMessage: `Import complete. ${reconciled.reviewCount} item(s) need review.`,
+      userMessage: parts.join(' '),
     }
   } catch (err) {
     return { ok: false, userMessage: `Import failed: ${String(err)}` }
