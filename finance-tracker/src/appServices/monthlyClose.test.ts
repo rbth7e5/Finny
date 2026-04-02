@@ -5,6 +5,7 @@ import {
   getMonthlyStatus,
   getReviewQueue,
   inferMonthKey,
+  sortReviewQueueTransactions,
 } from './monthlyClose'
 
 const base: AppState = {
@@ -191,6 +192,47 @@ describe('getMonthlyStatus (ER §11 — next_action + reason_text + month_key)',
     expect(s.nextAction).toBe('VIEW_SUMMARY')
     expect(s.reasonText).toBe('Month complete — view summary')
     expect(s.monthKey).toBe('2025-07')
+  })
+})
+
+describe('sortReviewQueueTransactions (TKT-014)', () => {
+  it('orders by date asc, then amount desc, then id', () => {
+    const a = {
+      id: 'z',
+      importId: 'i',
+      sourceType: 'UOB_BANK' as const,
+      kind: 'BANK_SETTLEMENT' as const,
+      amount: 10,
+      date: '2024-02-01',
+      description: 'x',
+      reconciliationState: 'NeedsReview' as const,
+      spendImpact: 'UNRESOLVED_REVIEW' as const,
+    }
+    const b = {
+      id: 'a',
+      importId: 'i',
+      sourceType: 'UOB_BANK' as const,
+      kind: 'BANK_SETTLEMENT' as const,
+      amount: 99,
+      date: '2024-01-15',
+      description: 'y',
+      reconciliationState: 'NeedsReview' as const,
+      spendImpact: 'UNRESOLVED_REVIEW' as const,
+    }
+    const c = {
+      id: 'm',
+      importId: 'i',
+      sourceType: 'UOB_BANK' as const,
+      kind: 'BANK_SETTLEMENT' as const,
+      amount: 5,
+      date: '2024-02-01',
+      description: 'z',
+      reconciliationState: 'NeedsReview' as const,
+      spendImpact: 'UNRESOLVED_REVIEW' as const,
+    }
+    const sorted = sortReviewQueueTransactions([a, b, c])
+    // b is earliest date (Jan); a and c share Feb — higher amount (a=10) before c=5; ids z then m
+    expect(sorted.map((t) => t.id)).toEqual(['a', 'z', 'm'])
   })
 })
 

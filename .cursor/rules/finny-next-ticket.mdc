@@ -1,0 +1,47 @@
+---
+description: Finny — implement next backlog ticket (TKT workflow, tests, requirements review, manual verification steps)
+alwaysApply: false
+---
+
+# Finny: next ticket
+
+**When the user says** `Finny next ticket`, **next ticket**, or **@finny-next-ticket**, do the following end-to-end (use tools; do not only advise).
+
+## 1. Pick the ticket
+
+- Read [IMPLEMENTATION_TICKETS.md](IMPLEMENTATION_TICKETS.md).
+- Choose the **next** ticket that is **not** `Status: DONE` and whose **Dependencies** are satisfied (use the **Execution Strategy** / dependency graph as tie-breaker: earlier phases before later).
+- If several are equally “next” or blocked, state the ambiguity briefly and pick the one that unblocks the most downstream work.
+
+## 2. Implement (TDD)
+
+- Follow the ticket’s **TDD** line and [Test-driven development](IMPLEMENTATION_TICKETS.md#test-driven-development-policy) in that file: failing test → minimal implementation → refactor.
+- Match existing project patterns (`finance-tracker/src`, `finance-tracker/src-tauri`).
+
+## 3. Run tests
+
+- From `finance-tracker`: `npm run test` (and `npm run build` if the change touches TS/build paths).
+- If Rust changed: from `finance-tracker/src-tauri`: `cargo test`.
+
+## 4. Requirements review
+
+- Cross-check behavior and acceptance against:
+  - [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md)
+  - [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md)
+  - [ENGINEERING_REQUIREMENTS.md](ENGINEERING_REQUIREMENTS.md)
+- Call out any intentional gaps vs. those docs in a short bullet list.
+
+## 5. Close the loop
+
+- Update [IMPLEMENTATION_TICKETS.md](IMPLEMENTATION_TICKETS.md): ticket **Status**, and the [Automated unit tests](IMPLEMENTATION_TICKETS.md#automated-unit-tests-vitest) table if new coverage applies.
+- Summarize what shipped, files touched, and test results for the user.
+
+## 6. Manual test steps (required in the final reply)
+
+- After implementation, **always** include a short **“How to manually verify”** section in your message to the user.
+- Cover both where relevant:
+  - **Automated:** exact commands (e.g. `npm run test`, focused `vitest run <path>`, `cargo test`) for the areas you changed.
+  - **App / Tauri:** steps using the real UI (e.g. `npx tauri dev` from `finance-tracker/`), which tabs or flows to use, and what to expect. Note if behavior only applies in Tauri (not a standalone browser tab).
+- Tie steps to **this ticket’s acceptance criteria** and any persistence or PDF caveats (see `finance-tracker/README.md`).
+
+**Do not** expand scope beyond the chosen ticket unless the user asks.

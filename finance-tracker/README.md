@@ -17,6 +17,8 @@ From this directory (`finance-tracker/`):
 npm install
 ```
 
+If you change **`package.json`** (dependencies or scripts), run **`npm install`** again and **commit `package-lock.json`** together with `package.json`. CI uses **`npm ci`**, which fails when those two files disagree; the workflow also checks that the lockfile matches `package.json` before install.
+
 ## Run locally
 
 Starts the Vite dev server and opens the **Tauri** window (`beforeDevCommand` in `src-tauri/tauri.conf.json` runs `npm run dev` for you).

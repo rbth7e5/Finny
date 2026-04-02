@@ -6,6 +6,7 @@ import {
 } from './appServices/finnyApp'
 import { getMonthlyCloseSummary, getMonthlyStatus, getReviewQueue } from './appServices/monthlyClose'
 import { DEFAULT_STATE } from './domain/defaults'
+import { reviewItemDetailLines } from './reconcile/reviewExplain'
 import type { AppState } from './domain/types'
 import { TauriSqliteAdapter } from './storage/tauriSqliteAdapter'
 
@@ -204,7 +205,11 @@ function App() {
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-lg font-medium">Review Queue ({reviewItems.length})</h2>
           {reviewItems.length === 0 ? (
-            <p className="text-sm">No unresolved items.</p>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600">
+              <p className="font-medium text-slate-800">You’re caught up</p>
+              <p className="mt-1">No bank or card lines need a manual match decision right now.</p>
+              <p className="mt-2 text-slate-500">When imports leave uncertain settlements, they will appear here in date order.</p>
+            </div>
           ) : (
             <>
               <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
@@ -226,13 +231,37 @@ function App() {
                   </li>
                 </ul>
               </div>
-              {reviewItems.map((item) => (
+              {reviewItems.map((item) => {
+                const { explanation, sourceFile, markers } = reviewItemDetailLines(
+                  item,
+                  state,
+                  state.profile,
+                )
+                return (
                 <article key={item.id} className="mb-3 rounded-lg border border-slate-200 p-3">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-950">
+                      {explanation.codeLabel}
+                    </span>
+                    <span className="text-xs text-slate-500">{explanation.code}</span>
+                  </div>
                   <p className="text-sm">
                     <strong>{item.description}</strong> — {item.amount.toFixed(2)}
                   </p>
-                  <p className="text-sm text-slate-600">Type: {item.kind}</p>
-                  <p className="mb-3 text-sm text-slate-600">Reference: {item.reference ?? '—'}</p>
+                  <p className="mt-1 text-sm text-slate-700">{explanation.humanSummary}</p>
+                  {explanation.bestScore !== undefined && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Best automatic score: {explanation.bestScore.toFixed(2)} (threshold{' '}
+                      {state.profile.confidenceThreshold.toFixed(2)})
+                    </p>
+                  )}
+                  <ul className="mt-2 space-y-0.5 text-xs text-slate-600">
+                    <li>Type: {item.kind}</li>
+                    <li>Source: {sourceFile ?? '—'}</li>
+                    {markers.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
                   <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                     <button
                       type="button"
@@ -258,7 +287,7 @@ function App() {
                     </button>
                   </div>
                 </article>
-              ))}
+              )})}
             </>
           )}
         </section>

@@ -1,4 +1,4 @@
-import type { AppState, SourceType } from '../domain/types'
+import type { AppState, SourceType, Transaction } from '../domain/types'
 
 const REQUIRED_SOURCES: SourceType[] = ['UOB_BANK', 'DBS_BANK', 'UOB_CARD', 'DBS_CARD']
 
@@ -54,6 +54,18 @@ export function getMonthlyCloseSummary(state: AppState) {
   }
 }
 
+/** Deterministic review order: date ascending, then higher amount first, then id. */
+export function sortReviewQueueTransactions(transactions: Transaction[]) {
+  return [...transactions].sort((a, z) => {
+    const byDate = a.date.localeCompare(z.date)
+    if (byDate !== 0) return byDate
+    if (z.amount !== a.amount) return z.amount - a.amount
+    return a.id.localeCompare(z.id)
+  })
+}
+
 export function getReviewQueue(state: AppState) {
-  return state.transactions.filter((t) => t.reconciliationState === 'NeedsReview')
+  return sortReviewQueueTransactions(
+    state.transactions.filter((t) => t.reconciliationState === 'NeedsReview'),
+  )
 }
