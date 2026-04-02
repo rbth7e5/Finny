@@ -39,6 +39,11 @@ export type Transaction = {
 export type RuleProfile = {
   matchWindowDays: number
   confidenceThreshold: number
+  /**
+   * When true, bank settlements only consider card credits from the same issuer
+   * (UOB bank ↔ UOB card, DBS bank ↔ DBS card). When false, amount/date/ref rules may pair across issuers.
+   */
+  sameIssuerCardMatchingOnly: boolean
 }
 
 export type AppState = {

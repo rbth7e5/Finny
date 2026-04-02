@@ -247,5 +247,13 @@ describe('updateRuleProfile', () => {
     const next = updateRuleProfile(s, { matchWindowDays: 12 })
     expect(next.profile.matchWindowDays).toBe(12)
     expect(next.profile.confidenceThreshold).toBe(EMPTY_STATE_PROFILE.confidenceThreshold)
+    expect(next.profile.sameIssuerCardMatchingOnly).toBe(EMPTY_STATE_PROFILE.sameIssuerCardMatchingOnly)
+  })
+
+  it('merges sameIssuerCardMatchingOnly', () => {
+    const s = emptyState()
+    const next = updateRuleProfile(s, { sameIssuerCardMatchingOnly: false })
+    expect(next.profile.sameIssuerCardMatchingOnly).toBe(false)
+    expect(next.profile.matchWindowDays).toBe(EMPTY_STATE_PROFILE.matchWindowDays)
   })
 })

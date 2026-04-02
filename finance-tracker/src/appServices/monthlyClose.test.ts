@@ -11,7 +11,7 @@ import {
 const base: AppState = {
   imports: [],
   transactions: [],
-  profile: { matchWindowDays: 5, confidenceThreshold: 0.75 },
+  profile: { matchWindowDays: 5, confidenceThreshold: 0.75, sameIssuerCardMatchingOnly: true },
 }
 
 describe('getMonthlyCloseSummary (PRD Scenario A — four statement types)', () => {

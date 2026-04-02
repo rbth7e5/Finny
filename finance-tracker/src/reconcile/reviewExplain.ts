@@ -1,5 +1,5 @@
 import type { AppState, RuleProfile, Transaction } from '../domain/types'
-import { matchBankAgainstCards } from './settlementCandidates'
+import { filterCardPoolForSettlementIssuer, matchBankAgainstCards } from './settlementCandidates'
 
 /** Aligns with ENGINEERING_REQUIREMENTS.md §12 reconciliation categories where applicable. */
 export type ReviewReasonCode =
@@ -33,10 +33,11 @@ export function explainReviewBankItem(
   profile: RuleProfile,
 ): ReviewItemExplanation {
   const cards = transactions.filter((t) => t.kind === 'CARD_CREDIT' && !t.linkedTransactionId)
+  const issuerScoped = filterCardPoolForSettlementIssuer(b, cards, profile)
   const { candidates, best, ambiguous } = matchBankAgainstCards(b, cards, profile)
 
   if (candidates.length === 0) {
-    const sameAmount = cards.filter((c) => Math.abs(c.amount - b.amount) < 0.01)
+    const sameAmount = issuerScoped.filter((c) => Math.abs(c.amount - b.amount) < 0.01)
     if (sameAmount.length > 0) {
       return {
         code: 'DATE_OUTSIDE_MATCH_WINDOW',

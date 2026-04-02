@@ -556,6 +556,22 @@ function App() {
               }
             />
           </label>
+          <label className="mb-2 flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={state.profile.sameIssuerCardMatchingOnly}
+              onChange={(e) =>
+                void patchState(
+                  updateRuleProfile(state, { sameIssuerCardMatchingOnly: e.target.checked }),
+                )
+              }
+            />
+            <span>
+              Match card payment credits only to the same bank brand (UOB bank ↔ UOB card, DBS bank ↔
+              DBS card). Turn off if you need cross-bank settlement pairing.
+            </span>
+          </label>
         </section>
       )}
     </div>

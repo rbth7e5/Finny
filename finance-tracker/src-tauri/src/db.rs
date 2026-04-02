@@ -80,18 +80,27 @@ pub fn migrate(conn: &Connection) -> Result<(), rusqlite::Error> {
         conn.pragma_update(None, "user_version", 2)?;
     }
 
+    if v < 3 {
+        conn.execute(
+            "ALTER TABLE rule_profile ADD COLUMN same_issuer_card_matching_only INTEGER NOT NULL DEFAULT 1",
+            [],
+        )?;
+        conn.pragma_update(None, "user_version", 3)?;
+    }
+
     Ok(())
 }
 
 pub fn load_state(conn: &Connection) -> Result<AppState, String> {
     let profile: RuleProfile = conn
         .query_row(
-            "SELECT match_window_days, confidence_threshold FROM rule_profile WHERE id = 1",
+            "SELECT match_window_days, confidence_threshold, same_issuer_card_matching_only FROM rule_profile WHERE id = 1",
             [],
             |row| {
                 Ok(RuleProfile {
                     match_window_days: row.get(0)?,
                     confidence_threshold: row.get(1)?,
+                    same_issuer_card_matching_only: row.get::<_, i32>(2)? != 0,
                 })
             },
         )
@@ -212,8 +221,12 @@ pub fn save_state(conn: &mut Connection, state: &AppState) -> Result<(), rusqlit
     }
 
     tx.execute(
-        "UPDATE rule_profile SET match_window_days = ?1, confidence_threshold = ?2 WHERE id = 1",
-        params![state.profile.match_window_days, state.profile.confidence_threshold],
+        "UPDATE rule_profile SET match_window_days = ?1, confidence_threshold = ?2, same_issuer_card_matching_only = ?3 WHERE id = 1",
+        params![
+            state.profile.match_window_days,
+            state.profile.confidence_threshold,
+            state.profile.same_issuer_card_matching_only as i32
+        ],
     )?;
 
     tx.commit()?;

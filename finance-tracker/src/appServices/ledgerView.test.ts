@@ -8,7 +8,7 @@ import {
   type LedgerSourceFilter,
 } from './ledgerView'
 
-const profile = { matchWindowDays: 5, confidenceThreshold: 0.75 }
+const profile = { matchWindowDays: 5, confidenceThreshold: 0.75, sameIssuerCardMatchingOnly: true }
 
 function txn(p: Partial<Transaction> & Pick<Transaction, 'id' | 'kind' | 'amount'>): Transaction {
   return {

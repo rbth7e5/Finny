@@ -1,10 +1,26 @@
-import type { RuleProfile, Transaction } from '../domain/types'
+import type { RuleProfile, SourceType, Transaction } from '../domain/types'
 import { datesWithinMatchWindow } from '../utils/statementDate'
 
 /** Same gap as reconcile: top-two scores within this are treated as ambiguous. */
 export const SCORE_AMBIGUITY_GAP = 0.05
 
 export type ScoredCard = { c: Transaction; score: number }
+
+export function bankCardIssuerPairAllowed(bank: SourceType, card: SourceType): boolean {
+  if (bank === 'UOB_BANK' && card === 'UOB_CARD') return true
+  if (bank === 'DBS_BANK' && card === 'DBS_CARD') return true
+  return false
+}
+
+/** Restricts the card pool used for settlement auto-matching when `sameIssuerCardMatchingOnly` is on. */
+export function filterCardPoolForSettlementIssuer(
+  bank: Transaction,
+  cardPool: Transaction[],
+  profile: RuleProfile,
+): Transaction[] {
+  if (!profile.sameIssuerCardMatchingOnly) return cardPool
+  return cardPool.filter((c) => bankCardIssuerPairAllowed(bank.sourceType, c.sourceType))
+}
 
 /**
  * Score unmatched card credits against a bank settlement line (v1 matching rules).
@@ -14,7 +30,8 @@ export function matchBankAgainstCards(
   cardPool: Transaction[],
   profile: RuleProfile,
 ): { candidates: ScoredCard[]; best?: ScoredCard; second?: ScoredCard; ambiguous: boolean } {
-  const candidates = cardPool
+  const pool = filterCardPoolForSettlementIssuer(b, cardPool, profile)
+  const candidates = pool
     .filter(
       (c) =>
         Math.abs(c.amount - b.amount) < 0.01 &&

@@ -48,4 +48,5 @@ export const DBS_CARD_HEADER = 'DBS Credit Cards Statement of Account'
 export const EMPTY_STATE_PROFILE = {
   matchWindowDays: 5,
   confidenceThreshold: 0.75,
+  sameIssuerCardMatchingOnly: true,
 } as const

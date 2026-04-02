@@ -38,9 +38,15 @@ pub struct Transaction {
     pub linked_transaction_id: Option<String>,
 }
 
+fn default_same_issuer_card_matching_only() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuleProfile {
     pub match_window_days: i32,
     pub confidence_threshold: f64,
+    #[serde(default = "default_same_issuer_card_matching_only")]
+    pub same_issuer_card_matching_only: bool,
 }

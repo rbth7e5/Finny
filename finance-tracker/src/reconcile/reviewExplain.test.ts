@@ -7,7 +7,7 @@ import {
   reviewItemDetailLines,
 } from './reviewExplain'
 
-const profile = { matchWindowDays: 5, confidenceThreshold: 0.75 }
+const profile = { matchWindowDays: 5, confidenceThreshold: 0.75, sameIssuerCardMatchingOnly: true }
 
 function bank(p: Partial<Transaction> & { id: string; amount: number }): Transaction {
   return {
@@ -49,6 +49,13 @@ describe('explainReviewBankItem (TKT-014)', () => {
     const c = card({ id: 'c1', amount: 100, date: '2024-01-20' })
     const x = explainReviewBankItem(b, [b, c], { ...profile, matchWindowDays: 5 })
     expect(x.code).toBe('DATE_OUTSIDE_MATCH_WINDOW')
+  })
+
+  it('NO_COUNTERPART when cross-brand card has same amount in window (issuer scope, TKT-016)', () => {
+    const b = bank({ id: 'b1', amount: 100, date: '2024-01-01' })
+    const c = card({ id: 'c1', sourceType: 'UOB_CARD', amount: 100, date: '2024-01-02' })
+    const x = explainReviewBankItem(b, [b, c], profile)
+    expect(x.code).toBe('NO_COUNTERPART_IN_WINDOW')
   })
 
   it('LOW_CONFIDENCE when in-window candidate but below threshold', () => {

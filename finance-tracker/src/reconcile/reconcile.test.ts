@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Transaction } from '../domain/types'
 import { reconcile } from './reconcile'
 
-const profile = { matchWindowDays: 5, confidenceThreshold: 0.75 }
+const profile = { matchWindowDays: 5, confidenceThreshold: 0.75, sameIssuerCardMatchingOnly: true }
 
 function bank(p: Partial<Transaction> & { id: string; amount: number }): Transaction {
   return {
@@ -107,6 +107,46 @@ describe('reconcile (PRD §6 settlement / ENG §7.4)', () => {
       date: '2024-01-06',
     })
     const { updated } = reconcile([b, c], { ...profile, matchWindowDays: 5 })
+    expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('AutoMatched')
+    expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe('b1')
+  })
+
+  it('does not auto-match DBS bank to UOB card when sameIssuerCardMatchingOnly is true (TKT-016)', () => {
+    const b = bank({
+      id: 'b1',
+      sourceType: 'DBS_BANK',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-01',
+    })
+    const c = card({
+      id: 'c1',
+      sourceType: 'UOB_CARD',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-02',
+    })
+    const { updated } = reconcile([b, c], profile)
+    expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('NeedsReview')
+    expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBeUndefined()
+  })
+
+  it('allows cross-issuer settlement match when sameIssuerCardMatchingOnly is false (TKT-016)', () => {
+    const b = bank({
+      id: 'b1',
+      sourceType: 'DBS_BANK',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-01',
+    })
+    const c = card({
+      id: 'c1',
+      sourceType: 'UOB_CARD',
+      amount: 100,
+      reference: 'R1',
+      date: '2024-01-02',
+    })
+    const { updated } = reconcile([b, c], { ...profile, sameIssuerCardMatchingOnly: false })
     expect(updated.find((t) => t.id === 'b1')!.reconciliationState).toBe('AutoMatched')
     expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe('b1')
   })

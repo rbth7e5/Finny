@@ -81,6 +81,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-015** | `appServices/ledgerView.test.ts` | `filterLedgerTransactions` (source / needs review / settlement-only); `buildLedgerDetailModel` (import trace, link peer, review vs reconciled copy) |
 | **TKT-019** | `appServices/finnyApp.test.ts`, `appServices/finnyApp.integration.test.ts` | Import → reconcile (incl. DBS auto-match chain), `ImportPdfResult.session` dedupe signals, monthly status → `resolveReviewItem` → `VIEW_SUMMARY`; **no** SQLite / IPC round-trip (TKT-025) |
 | **TKT-024** | `appServices/finnyApp.test.ts` | Service-layer import and review/profile helpers under test |
+| **TKT-016** | `reconcile/settlementCandidates.test.ts`, `reconcile/reconcile.test.ts`, `reconcile/reviewExplain.test.ts`, `appServices/finnyApp.test.ts` | `sameIssuerCardMatchingOnly` scopes settlement candidates; SQLite `rule_profile` column; Settings UI |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
 
@@ -268,6 +269,18 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - Supports confirm + override flows cleanly.
 - **Dependencies:** TKT-011
 
+### TKT-026 - Manual settlement pairing and link remap (FR-7 / Scenario C)
+- **Priority:** P1
+- **Type:** Frontend / Application services
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); failing Vitest for `resolveReviewItem` (or successor) and review-queue helpers before UI wiring; optional integration scenario in `finnyApp.integration.test.ts`.
+- **Description:** Close the gap versus [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md) **FR-7** (“confirm, reject, or **remap** settlement **links**”), **Scenario C** (user **remaps** link), and [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) Review actions (“**Pick another candidate**”, confirm suggested link). Today, confirm/override on an **unlinked** bank settlement only updates spend semantics and does **not** create a `linkedTransactionId`; users cannot choose which card credit pairs with a settlement.
+- **Acceptance criteria:**
+  - For a `NeedsReview` `BANK_SETTLEMENT` with no link, the Review UI offers a **concrete pairing path**: show ranked/eligible `CARD_CREDIT` candidates (reuse `matchBankAgainstCards` / same gates as auto-match, e.g. amount, match window, issuer scope from rule profile) and let the user **select one** and confirm, setting **bidirectional** `linkedTransactionId` and `UserConfirmed` / `SETTLEMENT_EXCLUDED` on both sides (aligned with TKT-011 symmetry).
+  - When the engine suggested a single best candidate but below threshold, surface it as the **default selection**; user can pick another eligible candidate or proceed with override (“not settlement”) as today.
+  - **Remap:** If a bank line is already linked (e.g. user corrects a wrong auto-match), user can change the paired card to another eligible line or clear the link per product rules; persisted state stays consistent on save/reload (see **TKT-025** links invariant).
+  - Re-import / re-run `reconcile` must not destroy **user-confirmed** links (existing `eligibleForSettlementAutoMatch` behavior remains; extend tests if remap introduces new edge cases).
+- **Dependencies:** TKT-011, TKT-014, TKT-009, TKT-016
+
 ### TKT-015 - Ledger + detail explainability view
 - **Status:** DONE
 - **Priority:** P1
@@ -282,10 +295,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-011
 
 ### TKT-016 - Rule profile settings (MVP-minimum)
+- **Status:** DONE
 - **Priority:** P1
 - **Type:** Frontend/Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); failing tests for persistence + reconciliation effect (Vitest and/or Rust integration) before implementation.
 - **Description:** Finalize MVP settings for match window, confidence threshold, and card payment source mappings.
+- **Unit tests:** `reconcile/settlementCandidates.test.ts`, `reconcile/reconcile.test.ts`, `reconcile/reviewExplain.test.ts`, `appServices/finnyApp.test.ts`.
 - **Acceptance criteria:**
   - Settings persist via storage layer.
   - Changes influence reconciliation behavior.
@@ -413,6 +428,10 @@ flowchart TD
   t8 --> t13
   t5 --> t13
   t11 --> t14[TKT014ReviewUX]
+  t14 --> t26[TKT026ManualSettlementPairing]
+  t11 --> t26
+  t9 --> t26
+  t16 --> t26
   t11 --> t15[TKT015LedgerDetail]
   t9 --> t16[TKT016RuleSettings]
   t10 --> t16
@@ -451,7 +470,7 @@ All phases follow [Test-driven development](#test-driven-development-policy): do
 - Goal: deterministic, explainable reconciliation with review fallback.
 
 ### Phase 3 - Workflow completion (Week 2)
-- Execute: TKT-005, TKT-012, TKT-013, TKT-014, TKT-015, TKT-016
+- Execute: TKT-005, TKT-012, TKT-013, TKT-014, TKT-015, TKT-016; **TKT-026** (manual settlement pairing / remap) when closing the FR-7 gap before or alongside release hardening.
 - Goal: complete monthly close flow with robust UI feedback.
 
 ### Phase 4 - Quality and release (Week 3)
