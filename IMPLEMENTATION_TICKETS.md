@@ -7,6 +7,43 @@ References:
 - [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md)
 - [ENGINEERING_REQUIREMENTS.md](ENGINEERING_REQUIREMENTS.md)
 
+## Traceability (PRD / Design)
+
+High-level map from [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md) (PRD) and [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) (DR) to tickets. For full acceptance detail, read each ticket and the spec sections cited.
+
+| Requirement | Ticket(s) | Status / notes |
+|-------------|-----------|----------------|
+| **FR-1** Local-only | TKT-004, TKT-017, TKT-021 | Runtime local; **NFR-5** user-installable EXE: TKT-021–022. |
+| **FR-2** Statement ingestion | TKT-005, TKT-006, TKT-013, TKT-031 | PDF upload + metadata; duplicate skip; **DR §5.2** DnD + reprocess option → **TKT-031**. Statement period as first-class field → **TKT-028** (with FR-3). |
+| **FR-3** Transaction normalization | TKT-002, TKT-006–008, **TKT-028** | Today: subset of fields; debit/credit/currency/period/trace → **TKT-028** (+ schema). |
+| **FR-4** Ledger + reconciliation states | TKT-002, TKT-004, TKT-009, TKT-011, TKT-015 | Implemented for extracted rows. |
+| **FR-5** Settlement detection + confidence | TKT-009, TKT-010, TKT-014, TKT-016, TKT-026 | Implemented. |
+| **FR-6** Double-count prevention | TKT-009, TKT-011, TKT-016, **TKT-028**, **TKT-029** | **Partial:** settlement pairing works; PRD “underlying card transactions” need **TKT-028**. **UC-2** transfer chain → **TKT-029**. |
+| **FR-7** Manual exceptions | TKT-011, TKT-014, TKT-026, TKT-027 | Implemented (Review + Ledger reopen). |
+| **UC-1** UOB settlement | TKT-007, TKT-009 | Implemented for parser-covered markers (narrow; see **Known MVP narrowing**). |
+| **UC-2** UOB→DBS→card | **TKT-029**, TKT-028, TKT-023 | Not fully modeled; advanced rules **TKT-023**. |
+| **PRD §11** Rule profile | TKT-016, **TKT-023** | MVP: window, threshold, issuer scope; mappings/patterns post-v1 **TKT-023**. |
+| **PRD §2.2 / §16** Success + exit criteria | TKT-020, TKT-022 | Goldens + release checklist; tie to AC explicitly in **TKT-020**, **TKT-022**. |
+| **NFR-1** Privacy / data location | TKT-004, **TKT-033**, TKT-025 | Show path + trust copy → **TKT-033**. |
+| **NFR-2** Performance (incremental reconcile) | — | Full re-reconcile on import today; no dedicated ticket (optional future). |
+| **NFR-3** Reliability | TKT-005, TKT-025 | Idempotent import; DB/IPC hardening **TKT-025**. |
+| **NFR-4** Explainability | TKT-014, TKT-015, TKT-027 | Detail/review copy; “rule name” depth varies. |
+| **NFR-5** Packaged executable | TKT-021, TKT-022 | Backlog. |
+| **DR §3.1** Continue monthly close CTA | TKT-012, **TKT-030** | Deterministic routing done; **user-selected month** vs `inferMonthKey` → **TKT-030**. |
+| **DR §5.1** Home / coverage / health | TKT-012, TKT-013, **TKT-030** | Coverage + counts; month picker + health strip → **TKT-030**. |
+| **DR §5.2** Import UX | TKT-013, **TKT-031** | Per-file outcomes; DnD + duplicate reprocess → **TKT-031**. |
+| **DR §5.3** Ledger | TKT-015, **TKT-032** | Filters + detail; sort + month range + badge labels → **TKT-032**. |
+| **DR §5.4–5.5** Review + Settings | TKT-014, TKT-016, TKT-026, **TKT-033** | Review done; Settings path/trust **TKT-033**; advanced forms **TKT-023**. |
+| **DR §6–7** Reconciliation UX + spend mental model | TKT-014, TKT-015, TKT-028 | Labels/spend model deepen with **TKT-032**, **TKT-028**. |
+| **DR §8–9** System states + trust copy | TKT-013, **TKT-033** | Import feedback; data path **TKT-033**. |
+| **DR §10** Accessibility | **TKT-034** | Baseline backlog. |
+| **DR §2.1** First-run / data dir failure | TKT-004, TKT-025, **TKT-033** | Recovery UX partially; hardening **TKT-025** / surface path **TKT-033**. |
+| **ER §7** Parser module (multi-line, boilerplate, IPC contract) | TKT-006–008, **TKT-028**, TKT-025 | Settlement-first parsers today; breadth **TKT-028**; validation/round-trip **TKT-025**. |
+
+### Known MVP narrowing (parsers vs PRD FR-3 / FR-6)
+
+[`statementParser.ts`](finance-tracker/src/parsers/statementParser.ts) today emits only **settlement-shaped** bank lines (e.g. UOB/DBS bill payment blocks), **card payment credit** lines, and **DBS FAST** as `TRANSFER`. It does **not** parse full card purchase grids or general bank ledgers. That is **narrower** than PRD **FR-3** / **FR-6** wording (“underlying card transactions”, full normalization). **TKT-028** is the planned bridge; until then, traceability marks FR-6 as **partial**.
+
 ## Current Implementation Reality (Snapshot)
 
 - Frontend stack is React + TypeScript + Vite, packaged via Tauri.
@@ -15,8 +52,11 @@ References:
 - Persistence: Tauri uses SQLite under the app data directory (`src-tauri/src/db.rs`); development is **Tauri-only** (no standalone-browser persistence path).
 - Initial load and save failures surface in the UI (empty workspace fallback on load failure; optimistic save with rollback on write failure).
 - **Dev workflow:** Tauri-only (`npx tauri dev`). The browser-localStorage adapter and factory were removed; standalone `npm run dev` in a tab is not a supported persistence path.
-- **Imports:** SHA-256 file hash on each import (SQLite `content_hash`); duplicate successful files are skipped. Transaction fingerprints dedupe re-imported rows. Parsing goes through `runStatementPipeline` → `parseTransactionsForSource` by source type.
+- **Ledger scope (PRD):** **Settlement-first** — imported rows are primarily bank settlements, card payment credits, and DBS FAST transfers; not a full statement line-item ledger. Full extraction is **TKT-028**.
+- **Imports:** SHA-256 file hash on each import (SQLite `content_hash`); duplicate successful files are **skipped** (non-destructive). No duplicate-file **reprocess** UX yet — **TKT-031**. Transaction fingerprints dedupe re-imported rows. Parsing goes through `runStatementPipeline` → `parseTransactionsForSource` by source type.
 - **Reconciliation:** `matchWindowDays` filters bank↔card candidates when both transaction dates parse; `statementDate` normalises common formats to ISO in parsers when possible.
+- **Home / month (DR §5.1):** `monthKey` is **inferred** from latest successful import timestamps (`inferMonthKey` in `monthlyClose.ts`), not user-selected — **TKT-030**.
+- **Settings / trust (DR §9, NFR-1):** App data path surfaced to users and “open folder” are not fully covered — **TKT-033** (persistence hardening: **TKT-025**).
 - **Process:** New behavior follows **test-driven development** (see [Test-driven development](#test-driven-development-policy)); each backlog ticket states how TDD applies.
 
 ## Ticket Legend
@@ -84,6 +124,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-016** | `reconcile/settlementCandidates.test.ts`, `reconcile/reconcile.test.ts`, `reconcile/reviewExplain.test.ts`, `appServices/finnyApp.test.ts` | `sameIssuerCardMatchingOnly` scopes settlement candidates; SQLite `rule_profile` column; Settings UI |
 | **TKT-026** | `appServices/settlementReview.test.ts` | `listSettlementCardCandidates`, `confirmSettlementPair` (link + remap); `matchBankAgainstCards` includes card already linked to same bank; Review tab pairing UI in `App.tsx` |
 | **TKT-027** | `appServices/settlementReview.test.ts`, `appServices/ledgerView.test.ts` | `reopenSettlementForReview` (unlink + `NeedsReview` both sides); `ledgerBankSettlementCanReopenForReview`; Ledger detail action in `App.tsx` → Review tab |
+| **TKT-028–034** | — | **Backlog** — add Vitest (or manual verification in TKT-022) per ticket when implementation starts. |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
 
@@ -145,6 +186,8 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - **Write strategy:** Document or replace full table replace on each save if ledger size requires incremental upserts; measure or cap worst-case save time.
   - **Links invariant:** Either enforce or document the relationship between `transactions.linked_transaction_id` and rows in `reconciliation_links` (links are currently derived from bank settlement rows on save).
   - **Tests:** Add at least one Rust integration test: temp file DB, run migrations, save and reload `AppState` (complements TKT-018/019).
+  - **IPC validation:** Enforce valid enums / payload shape at Tauri command boundary per acceptance above (reduces serde/SQL corruption risk).
+  - **Data directory:** Startup and recovery behavior aligned with [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§2.1** and [ENGINEERING_REQUIREMENTS.md](ENGINEERING_REQUIREMENTS.md) data-path expectations; user-visible path surfacing is **TKT-033** (avoid duplicating product copy in Rust-only changes).
 - **Dependencies:** TKT-004
 
 ### TKT-005 - Implement idempotent import guardrails
@@ -176,6 +219,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Priority:** P0
 - **Type:** Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); add fixture text and failing parser expectations before changing extraction logic.
+- **Scope / PRD note:** MVP delivery here is **settlement and card payment-line patterns** (bill pay, card credits, etc.), not a full statement grid. Full line-item extraction for **FR-3** / **FR-6** is **TKT-028** and must not be assumed complete from “Harden UOB parsers” alone.
 - **Description:** Implement robust UOB extraction using section-aware parsing, multiline handling, and boilerplate filtering.
 - **Unit tests:** `statementParser.test.ts` + `src/test/fixtures/statements.ts` (text snippets only; not full PDF golden files).
 - **Acceptance criteria:**
@@ -189,6 +233,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Priority:** P0
 - **Type:** Backend
 - **TDD:** Required per [Test-driven development](#test-driven-development-policy); add fixture text and failing parser expectations before changing extraction logic.
+- **Scope / PRD note:** Same as **TKT-007** — fixture-level **settlement / payment / FAST** shapes; full ledger lines → **TKT-028**.
 - **Description:** Implement robust DBS/POSB extraction, including consolidated statement section filtering and reference extraction.
 - **Unit tests:** `statementParser.test.ts` + fixtures (text snippets only; not full PDF golden files).
 - **Acceptance criteria:**
@@ -244,6 +289,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Acceptance criteria:**
   - Home CTA route reason matches status contract.
   - Status computed from imports + unresolved review counts.
+- **Gap / follow-up:** `inferMonthKey` is **not** a user-selected month; [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§5.1** / **§3.1** month picker and health strip → **TKT-030**.
 - **Dependencies:** TKT-005, TKT-011
 
 ### TKT-013 - Import UI hardening and feedback states
@@ -257,6 +303,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - User can distinguish success, partial, failed, duplicate outcomes.
   - Non-transaction section handling surfaces as info, not fatal errors.
   - Styling implementation remains Tailwind-first (no new legacy stylesheet dependency).
+- **Gap / follow-up:** [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§5.2** drag-and-drop and **§4.2** duplicate **reprocess** vs dismiss — **TKT-031**; PRD **FR-2** idempotent messaging alignment.
 - **Dependencies:** TKT-007, TKT-008, TKT-005
 
 ### TKT-014 - Review queue UX hardening
@@ -298,6 +345,86 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - Persisted state round-trips through SQLite (TKT-004); no orphaned `linked_transaction_id` (TKT-025 links invariant).
 - **Dependencies:** TKT-026, TKT-015, TKT-011
 
+### TKT-028 - Full statement line extraction and FR-6 ledger depth
+- **Status:** TODO
+- **Priority:** P0
+- **Type:** Backend / Foundation
+- **TDD:** Required per [Test-driven development](#test-driven-development-policy); Vitest fixtures and parser/reconcile tests before expanding extraction; schema changes paired with Rust/IPC alignment (**TKT-025**) when types change.
+- **Description:** Extend parsers and domain model so the ledger can include **general** bank and card statement line items (purchases, fees, other credits/debits), not only settlement/payment/FAST patterns. Enables PRD **FR-3** (full normalization: direction, currency, identifiers where feasible), **FR-6** (spend totals using underlying card lines + linked settlement exclusion), and **Scenario A** steps 2–5 as written. Optional follow-up: split into UOB vs DBS delivery milestones if scope is too large.
+- **Acceptance criteria:**
+  - Card and/or bank PDF text extracts additional normalized rows beyond current `BANK_SETTLEMENT` / `CARD_CREDIT` / `TRANSFER` settlement scope, with Vitest fixture coverage per institution.
+  - `Transaction` / `TransactionKind` (or equivalent) extended as needed; migration + SQLite persistence remain consistent (**TKT-004** / **TKT-025**).
+  - Reconciliation and `spendImpact` rules updated so double-count semantics match **FR-6** for imported line items (document behavior in tests).
+  - **TKT-020** spend-total goldens can credibly reference this work (may remain incremental until a defined MVP subset is extracted).
+- **Dependencies:** TKT-002, TKT-006, TKT-007, TKT-008, TKT-009
+
+### TKT-029 - UC-2 transfer chain (UOB→DBS) detection and classification
+- **Status:** TODO
+- **Priority:** P1
+- **Type:** Backend / Application services
+- **TDD:** Required; integration or service tests for UC-2 scenarios before UI promises.
+- **Description:** Implement PRD **UC-2**: treat inter-bank transfer (e.g. salary in UOB, transfer UOB→DBS, DBS card payment from DBS) as **account movement / transfer**, not spend, in line with **FR-6**. Coordinate with **TKT-028** (needs parser evidence for transfer lines) and **TKT-023** (full pattern/salary configuration post–v1); MVP may ship a **minimal** deterministic slice (e.g. specific narration + amount window) before advanced rule UI.
+- **Acceptance criteria:**
+  - Documented test scenario(s) matching UC-2 narrative produce expected `spendImpact` / reconciliation labels (no double-count vs settlement).
+  - Rule profile or engine hooks allow future expansion without breaking existing settlement matching (**TKT-009**).
+- **Dependencies:** TKT-016, TKT-009; **TKT-028** (or narrower parser hooks agreed in ticket scope)
+
+### TKT-030 - Design parity: Home month context and health strip
+- **Status:** TODO
+- **Priority:** P1
+- **Type:** Frontend / Application services
+- **TDD:** Required; extend `monthlyClose` tests for selected-month semantics before UI.
+- **Description:** Close gaps vs [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§5.1** and **§3.1**: user-visible **month selection** (or explicitly documented alternative if product defers), **last successful import** / **parser warning** aggregates on Home, and **review count** tied to the same month context as the CTA.
+- **Acceptance criteria:**
+  - Home reflects Design **§5.1** checklist and CTA contract **§3.1** for the chosen month scope.
+  - `getMonthlyStatus` / `getMonthlyCloseSummary` (or successors) behave deterministically with tests.
+- **Dependencies:** TKT-012, TKT-013
+
+### TKT-031 - Design parity: Import drag-and-drop and duplicate reprocess
+- **Status:** TODO
+- **Priority:** P2
+- **Type:** Frontend
+- **TDD:** Required where behavior changes (e.g. view-model for duplicate choice); smoke acceptable for pure DnD wiring if covered manually in **TKT-022**.
+- **Description:** [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§5.2** and **§4.2**: **drag-and-drop** upload zone; when a duplicate file is detected, offer **reprocess** vs **dismiss** (per PRD **FR-2** idempotent story), not only silent skip — align copy with product.
+- **Acceptance criteria:**
+  - User can add files via drag-and-drop and file picker.
+  - Duplicate-file path documents user choice and outcome; no silent ambiguity.
+- **Dependencies:** TKT-005, TKT-013
+
+### TKT-032 - Design parity: Ledger sort, month range, reconciliation badges
+- **Status:** TODO
+- **Priority:** P2
+- **Type:** Frontend
+- **TDD:** Prefer Vitest for sort/filter helpers extracted from `App.tsx`.
+- **Description:** [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§5.3** and **§6**: **sortable** ledger columns; **month range** (or month) filter; reconciliation **badges/labels** aligned with suggested mapping (Matched / Needs review / Confirmed / Edited by you).
+- **Acceptance criteria:**
+  - Table supports at least date and amount sort (or documented MVP subset).
+  - Filter restricts rows by month or range as specified in AC.
+  - Labels match Design **§6** table or documented waiver in **TKT-022**.
+- **Dependencies:** TKT-015
+
+### TKT-033 - Settings: data location, trust copy, optional open folder
+- **Status:** TODO
+- **Priority:** P1
+- **Type:** Frontend / Backend
+- **TDD:** Required for any new IPC/command; UI copy may be manual sign-off in **TKT-022**.
+- **Description:** [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§9**; PRD **NFR-1**: show **application data directory** path in Settings; short **local-only** trust copy; **open folder** affordance when Tauri exposes a safe API. Complements **TKT-025** (persistence/recovery) without duplicating Rust migration work — this ticket is **user-visible path + UX**.
+- **Acceptance criteria:**
+  - User can read where data lives; optional open-in-explorer when supported.
+  - First-run / unreadable path errors remain consistent with **DR §2.1** (coordinate **TKT-025** if recovery flow changes).
+- **Dependencies:** TKT-004
+
+### TKT-034 - Accessibility baseline (keyboard + non-color status)
+- **Status:** TODO
+- **Priority:** P2
+- **Type:** Frontend / Quality
+- **TDD:** Manual checklist in **TKT-022** or lightweight automation if introduced; no exemption from documenting verification steps.
+- **Description:** [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§10**: keyboard operability for **upload**, **navigation**, **review actions**; reconciliation status not conveyed by **color alone** (text/icon pairing).
+- **Acceptance criteria:**
+  - Primary flows operable without mouse (documented key paths).
+  - Status badges include text (or aria) consistent with Design **§10**.
+- **Dependencies:** TKT-013, TKT-015
+
 ### TKT-015 - Ledger + detail explainability view
 - **Status:** DONE
 - **Priority:** P1
@@ -309,6 +436,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - Filter by account/source, needs review, settlement-related.
   - Transaction detail shows source import + reasoning payload.
   - Reusable UI primitives are used where feasible (for example panel/table/button patterns), implemented in Tailwind-friendly components.
+- **Gap / follow-up:** [DESIGN_REQUIREMENTS.md](DESIGN_REQUIREMENTS.md) **§5.3** sortable columns, month range filter, and **§6** user-facing reconciliation labels — **TKT-032**.
 - **Dependencies:** TKT-011
 
 ### TKT-016 - Rule profile settings (MVP-minimum)
@@ -361,7 +489,7 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Priority:** P0
 - **Type:** Quality
 - **TDD:** Required — primary deliverable is tests; add failing cases first, then fix code until green ([Test-driven development](#test-driven-development-policy)).
-- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring (including TKT-010 match window), fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Reconcile hardening: re-`reconcile` leaves linked `AutoMatched` / `UserConfirmed` pairs unchanged; one-to-one consumption when two banks compete for one card. Remaining: broader parser edge cases, optional golden outputs (TKT-020).
+- **Status:** IN PROGRESS — Vitest suite in `finance-tracker` covers detection, pipeline, fixture-based UOB/DBS lines, reconcile scoring (including TKT-010 match window), fingerprints, file hash, monthly close, and `importPdfStatements` / `resolveReviewItem` (see [Automated unit tests](#automated-unit-tests-vitest)). Reconcile hardening: re-`reconcile` leaves linked `AutoMatched` / `UserConfirmed` pairs unchanged; one-to-one consumption when two banks compete for one card. Remaining: broader parser edge cases; **full statement line extraction** (**TKT-028**) is the main driver for tests beyond settlement-shaped lines; optional golden outputs (**TKT-020**).
 - **Description:** Add unit tests for source detection, parser extraction, date normalization, matching precedence, and review fallback.
 - **Acceptance criteria:**
   - Test suite covers UOB and DBS sample-driven cases.
@@ -384,11 +512,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Priority:** P0
 - **Type:** Quality
 - **TDD:** Required — check in expected golden output (or snapshot) first or alongside parser/reconcile changes so CI fails on drift ([Test-driven development](#test-driven-development-policy)).
-- **Description:** Add anonymized fixtures and expected outputs for UOB/DBS settlement + transfer scenarios.
+- **Description:** Add anonymized fixtures and expected outputs for UOB/DBS settlement + transfer scenarios. Tie goldens to PRD **§2.2** success metrics (e.g. no double-count in dataset) and **§16 MVP exit** / **Scenario A** acceptance — especially **§16** items 3–4 (settlement detection, spend totals). **Spend-level** goldens may depend on **TKT-028** progress; settlement-only goldens can proceed earlier.
 - **Acceptance criteria:**
   - Golden files maintained for expected links/totals.
   - CI check compares outputs deterministically.
-- **Dependencies:** TKT-018, TKT-019
+  - Checklist in **TKT-022** can reference these artifacts as evidence for PRD **§16** sign-off.
+- **Dependencies:** TKT-018, TKT-019; coordinate **TKT-028** for FR-6-level totals when applicable
 
 ### TKT-021 - Windows packaging and installer smoke tests
 - **Priority:** P0
@@ -410,6 +539,9 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
   - Release candidate tagged and archived.
   - Locked v1 constraints verified in checklist: `Tauri`, `PDF-first`, `one-to-one + review fallback`, `manual reinstall updates`.
   - Checklist explicitly gates on **all automated tests passing** (`npm run test` in `finance-tracker`, `cargo test` in `src-tauri` when Rust changed).
+  - **PRD §16 (MVP exit)** — each item ticked **Pass**, **Waived**, or **Deferred** with pointer (ticket or doc): (1) four-statement import workflow, (2) coherent ledger + traceability, (3) settlement detection + billing cycle linking, (4) spend totals without double count, (5) UC-2 flow modeled, (6) manual review path, (7) re-import no dupes, (8) installable EXE monthly flow offline.
+  - **Design §5–7 (critical screens)** — Home/Import/Ledger/Review/Settings behaviors ticked or waived with pointer: **§5.1** month/coverage/health (**TKT-030** if waived), **§5.2** import UX (**TKT-031**), **§5.3** ledger sort/range/badges (**TKT-032**), **§5.4–5.5** review/settings (**TKT-033** for data path), **§6–7** spend mental model (link **TKT-028**/**TKT-032** if partial), **§10** a11y (**TKT-034** if waived).
+  - Post–v1 items explicitly waived (e.g. **TKT-023** advanced rules) must say **Waived post-v1** on the checklist, not silent gap.
 - **Dependencies:** TKT-021
 
 ## Follow-up engineering (review notes, tracked as TKT-025)
@@ -470,6 +602,20 @@ flowchart TD
   t12 --> t19
   t18 --> t20[TKT020GoldenFixtures]
   t19 --> t20
+  t7 --> t28[TKT028FullStatementLines]
+  t8 --> t28
+  t9 --> t29[TKT029UC2TransferChain]
+  t16 --> t29
+  t28 --> t29
+  t28 --> t20
+  t12 --> t30[TKT030HomeMonthHealth]
+  t13 --> t30
+  t5 --> t31[TKT031ImportDnDReprocess]
+  t13 --> t31
+  t15 --> t32[TKT032LedgerSortBadges]
+  t4 --> t33[TKT033DataLocationUX]
+  t13 --> t34[TKT034A11yBaseline]
+  t15 --> t34
   t4 --> t21[TKT021WindowsPackaging]
   t17 --> t21
   t20 --> t21
@@ -496,6 +642,10 @@ All phases follow [Test-driven development](#test-driven-development-policy): do
 - Execute: TKT-018, TKT-019, TKT-020, TKT-021, TKT-022
 - Goal: confidence for shipping Windows installer.
 
+### Phase 5 - Spec closure and PRD/Design depth (after core release path)
+- Execute: **TKT-028**, **TKT-029** (ledger depth, UC-2, FR-6 alignment), **TKT-030**–**TKT-034** (Design §5–§10 parity: Home month/health, Import DnD/reprocess, Ledger sort/badges, data path, a11y), **TKT-025** (persistence / IPC / round-trip hardening in parallel as needed).
+- Goal: reduce “partial” rows in [Traceability (PRD / Design)](#traceability-prd--design); **TKT-022** checklist records Pass/Waived/Deferred per PRD **§16** and Design **§5–7**.
+
 ## Fast-Track (If shipping pressure is high)
 
 If turnaround must be extremely fast, cut to a minimum critical path:
@@ -506,8 +656,9 @@ If turnaround must be extremely fast, cut to a minimum critical path:
 Minimum fixture baseline still required in fast-track:
 - At least one UOB bank/card sample pair and one DBS bank/card sample pair in test fixtures.
 
-Defer to post-v1:
-- TKT-015 polish depth
+Defer to post-v1 (or **Phase 5** above):
+- TKT-015 polish depth (superseded in part by **TKT-032**)
 - TKT-023 advanced profile options
-- TKT-020 golden fixture breadth
+- TKT-020 golden fixture breadth (coordinate **TKT-028** for spend-total goldens)
+- TKT-028–034, TKT-025 hardening (see Phase 5)
 
