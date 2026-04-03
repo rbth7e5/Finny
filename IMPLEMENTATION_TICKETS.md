@@ -124,6 +124,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-016** | `reconcile/settlementCandidates.test.ts`, `reconcile/reconcile.test.ts`, `reconcile/reviewExplain.test.ts`, `appServices/finnyApp.test.ts` | `sameIssuerCardMatchingOnly` scopes settlement candidates; SQLite `rule_profile` column; Settings UI |
 | **TKT-026** | `appServices/settlementReview.test.ts` | `listSettlementCardCandidates`, `confirmSettlementPair` (link + remap); `matchBankAgainstCards` includes card already linked to same bank; Review tab pairing UI in `App.tsx` |
 | **TKT-027** | `appServices/settlementReview.test.ts`, `appServices/ledgerView.test.ts` | `reopenSettlementForReview` (unlink + `NeedsReview` both sides); `ledgerBankSettlementCanReopenForReview`; Ledger detail action in `App.tsx` → Review tab |
+| **TKT-020** | `test/goldens/goldens.test.ts`, `test/goldens/*.expected.json` | Deterministic import → reconcile snapshots: DBS ref+amount AutoMatched pair; UOB same amount/date below auto-match threshold (NeedsReview) |
 | **TKT-028–034** | — | **Backlog** — add Vitest (or manual verification in TKT-022) per ticket when implementation starts. |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
@@ -509,9 +510,11 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-005, TKT-011, TKT-012
 
 ### TKT-020 - Acceptance test fixtures and golden outputs
+- **Status:** DONE (settlement-focused goldens; FR-6 / spend-total goldens remain coordinated with **TKT-028**)
 - **Priority:** P0
 - **Type:** Quality
 - **TDD:** Required — check in expected golden output (or snapshot) first or alongside parser/reconcile changes so CI fails on drift ([Test-driven development](#test-driven-development-policy)).
+- **Unit tests:** `src/test/goldens/goldens.test.ts` + `src/test/goldens/*.expected.json` (see [Automated unit tests](#automated-unit-tests-vitest)).
 - **Description:** Add anonymized fixtures and expected outputs for UOB/DBS settlement + transfer scenarios. Tie goldens to PRD **§2.2** success metrics (e.g. no double-count in dataset) and **§16 MVP exit** / **Scenario A** acceptance — especially **§16** items 3–4 (settlement detection, spend totals). **Spend-level** goldens may depend on **TKT-028** progress; settlement-only goldens can proceed earlier.
 - **Acceptance criteria:**
   - Golden files maintained for expected links/totals.

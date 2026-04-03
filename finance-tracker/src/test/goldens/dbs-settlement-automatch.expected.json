@@ -1,0 +1,50 @@
+{
+  "imports": [
+    {
+      "id": "imp-id-1",
+      "fileName": "dbs-bank.pdf",
+      "sourceType": "DBS_BANK",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "imp-id-3",
+      "fileName": "dbs-card.pdf",
+      "sourceType": "DBS_CARD",
+      "status": "SUCCESS"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "txn-id-2",
+      "importId": "imp-id-1",
+      "sourceType": "DBS_BANK",
+      "kind": "BANK_SETTLEMENT",
+      "amount": 888.88,
+      "date": "2024-02-01",
+      "description": "DBSC-4111111111111111",
+      "cardToken": "4111111111111111",
+      "reference": "GOLD19",
+      "reconciliationState": "AutoMatched",
+      "spendImpact": "SETTLEMENT_EXCLUDED",
+      "linkedTransactionId": "txn-id-4"
+    },
+    {
+      "id": "txn-id-4",
+      "importId": "imp-id-3",
+      "sourceType": "DBS_CARD",
+      "kind": "CARD_CREDIT",
+      "amount": 888.88,
+      "date": "2024-02-01",
+      "description": "DBS card bill payment credit",
+      "reference": "GOLD19",
+      "reconciliationState": "AutoMatched",
+      "spendImpact": "SETTLEMENT_EXCLUDED",
+      "linkedTransactionId": "txn-id-2"
+    }
+  ],
+  "reviewCount": 0,
+  "spendImpactCounts": {
+    "SETTLEMENT_EXCLUDED": 2
+  },
+  "linkedSettlementPairs": 1
+}

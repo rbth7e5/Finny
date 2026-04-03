@@ -1,0 +1,47 @@
+{
+  "imports": [
+    {
+      "id": "imp-id-1",
+      "fileName": "uob-bank.pdf",
+      "sourceType": "UOB_BANK",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "imp-id-3",
+      "fileName": "uob-card.pdf",
+      "sourceType": "UOB_CARD",
+      "status": "SUCCESS"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "txn-id-2",
+      "importId": "imp-id-1",
+      "sourceType": "UOB_BANK",
+      "kind": "BANK_SETTLEMENT",
+      "amount": 1234.56,
+      "date": "2024-01-10",
+      "description": "UOB bill payment",
+      "cardToken": "4111111111111111",
+      "reconciliationState": "NeedsReview",
+      "spendImpact": "UNRESOLVED_REVIEW"
+    },
+    {
+      "id": "txn-id-4",
+      "importId": "imp-id-3",
+      "sourceType": "UOB_CARD",
+      "kind": "CARD_CREDIT",
+      "amount": 1234.56,
+      "date": "2024-01-10",
+      "description": "UOB card payment (e-bank/home banking)",
+      "reference": "UOBPAIR1",
+      "reconciliationState": "NeedsReview",
+      "spendImpact": "UNRESOLVED_REVIEW"
+    }
+  ],
+  "reviewCount": 2,
+  "spendImpactCounts": {
+    "UNRESOLVED_REVIEW": 2
+  },
+  "linkedSettlementPairs": 0
+}
