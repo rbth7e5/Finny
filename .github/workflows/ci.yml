@@ -69,3 +69,54 @@ jobs:
       - name: Cargo check
         working-directory: finance-tracker/src-tauri
         run: cargo check --all-targets
+
+  # TKT-021 — Windows installer build (validates release bundle on each main/PR).
+  tauri-windows:
+    name: Tauri Windows bundle
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: finance-tracker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: finance-tracker/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "finance-tracker/src-tauri -> target"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Rust tests
+        working-directory: finance-tracker/src-tauri
+        run: cargo test
+
+      - name: Tauri production bundle
+        run: npx tauri build
+
+      - name: Verify NSIS / MSI artifacts exist
+        shell: pwsh
+        working-directory: finance-tracker
+        run: |
+          $root = Join-Path "src-tauri/target/release" "bundle"
+          if (-not (Test-Path $root)) {
+            throw "Expected bundle directory missing: $root"
+          }
+          $artifacts = Get-ChildItem -Path $root -Recurse -Include *.exe,*.msi -File -ErrorAction SilentlyContinue
+          if (-not $artifacts -or $artifacts.Count -lt 1) {
+            throw "No .exe or .msi installer found under $root"
+          }
+          Write-Host "Found $($artifacts.Count) installer artifact(s):"
+          $artifacts | ForEach-Object { Write-Host "  $($_.FullName)" }

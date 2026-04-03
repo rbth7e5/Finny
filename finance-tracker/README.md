@@ -47,6 +47,17 @@ npx tauri build
 
 Outputs depend on platform (e.g. Windows under `src-tauri/target/release/bundle/`).
 
+### Windows installer smoke (TKT-021)
+
+After `npx tauri build` (or installing a CI-produced bundle), repeat this once per release candidate:
+
+1. Run the **NSIS setup** or **MSI** from `src-tauri/target/release/bundle/` and finish install (default location is fine).
+2. **Disconnect network** (airplane mode or unplug Ethernet) and launch **Finny** from the Start menu or desktop shortcut.
+3. Confirm the app **opens** and the **Home** tab loads without a blank crash.
+4. Use **Import** with a **local PDF** you already have (or a tiny test PDF); confirm parsing either succeeds or shows the expected failure/duplicate messaging — no dependency on cloud services.
+
+CI on `windows-latest` runs `npm run test`, `cargo test`, `npx tauri build`, and fails if no `.exe`/`.msi` appears under the bundle directory (see `.github/workflows/ci.yml`).
+
 **`npm run preview`** serves the production build **without** Tauri. Load/save will fail at runtime; use only for static checks, not real use.
 
 ## Other scripts

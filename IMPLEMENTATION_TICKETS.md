@@ -105,6 +105,8 @@ Tests should land in the **same change** as the implementation (same PR / same m
 
 Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live under `src/**/*.test.ts` with shared text fixtures in `src/test/fixtures/statements.ts`.
 
+**Windows Tauri bundle CI** (not Vitest): **TKT-021** — `.github/workflows/ci.yml` job `tauri-windows`.
+
 | Ticket | Test file(s) | What is covered |
 |--------|---------------|-----------------|
 | **TKT-005** | `utils/fileHash.test.ts`, `import/transactionFingerprint.test.ts`, `appServices/finnyApp.test.ts` | SHA-256 hex helper; fingerprint stability/set; duplicate file skip, failed-import retry, duplicate row skip on re-import |
@@ -125,6 +127,7 @@ Run from `finance-tracker`: `npm run test` (or `npm run test:watch`). Tests live
 | **TKT-026** | `appServices/settlementReview.test.ts` | `listSettlementCardCandidates`, `confirmSettlementPair` (link + remap); `matchBankAgainstCards` includes card already linked to same bank; Review tab pairing UI in `App.tsx` |
 | **TKT-027** | `appServices/settlementReview.test.ts`, `appServices/ledgerView.test.ts` | `reopenSettlementForReview` (unlink + `NeedsReview` both sides); `ledgerBankSettlementCanReopenForReview`; Ledger detail action in `App.tsx` → Review tab |
 | **TKT-020** | `test/goldens/goldens.test.ts`, `test/goldens/*.expected.json` | Deterministic import → reconcile snapshots: DBS ref+amount AutoMatched pair; UOB same amount/date below auto-match threshold (NeedsReview) |
+| **TKT-021** | — | GitHub Actions `tauri-windows` (`windows-latest`): `npm run test`, `cargo test`, `npx tauri build`, verify installer `.exe`/`.msi` under `bundle/`; manual offline smoke: `finance-tracker/README.md` |
 | **TKT-028–034** | — | **Backlog** — add Vitest (or manual verification in TKT-022) per ticket when implementation starts. |
 
 Tickets not listed here have **no** dedicated automated tests in the repo yet.
@@ -523,10 +526,12 @@ Tickets not listed here have **no** dedicated automated tests in the repo yet.
 - **Dependencies:** TKT-018, TKT-019; coordinate **TKT-028** for FR-6-level totals when applicable
 
 ### TKT-021 - Windows packaging and installer smoke tests
+- **Status:** DONE (GitHub Actions `tauri-windows` job + README manual smoke)
 - **Priority:** P0
 - **Type:** Release
 - **TDD:** Per [Test-driven development](#test-driven-development-policy) — automate build/installer verification in CI where feasible; document repeatable manual smoke for gaps.
 - **Description:** Build Tauri Windows package and validate install/launch/update (manual reinstall) workflow.
+- **CI:** `.github/workflows/ci.yml` job `tauri-windows` (`windows-latest`): `npm ci`, `npm run test`, `cargo test`, `npx tauri build`, verify `bundle/` contains `.exe` or `.msi`.
 - **Acceptance criteria:**
   - Installer builds successfully.
   - App launches and runs core monthly flow offline.
