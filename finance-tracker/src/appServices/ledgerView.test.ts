@@ -72,6 +72,24 @@ describe('filterLedgerTransactions (TKT-015)', () => {
     })
     expect(f.map((t) => t.id)).toEqual(['a', 'c'])
   })
+
+  it('settlementRowsOnly excludes CARD_PURCHASE (TKT-028)', () => {
+    const withPurchase = [
+      ...rows,
+      txn({
+        id: 'd',
+        kind: 'CARD_PURCHASE',
+        amount: 4,
+        sourceType: 'UOB_CARD',
+        spendImpact: 'SPEND',
+      }),
+    ]
+    const f = filterLedgerTransactions(withPurchase, {
+      ...DEFAULT_LEDGER_FILTERS,
+      settlementRowsOnly: true,
+    })
+    expect(f.map((t) => t.id)).toEqual(['a', 'c'])
+  })
 })
 
 describe('LEDGER_SOURCE_OPTIONS', () => {

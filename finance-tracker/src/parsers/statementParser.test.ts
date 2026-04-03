@@ -4,11 +4,15 @@ import {
   DBS_BANK_FAST,
   DBS_BANK_HEADER,
   DBS_CARD_BILL,
+  DBS_CARD_GRID,
   DBS_CARD_HEADER,
+  DBS_CARD_RETAIL,
   UOB_BANK_BILL_PAYMENT,
   UOB_BANK_HEADER,
   UOB_CARD_EBANK,
+  UOB_CARD_GRID,
   UOB_CARD_HEADER,
+  UOB_CARD_RETAIL,
 } from '../test/fixtures/statements'
 import { detectSource, parseTransactionsForSource } from './statementParser'
 
@@ -84,5 +88,58 @@ describe('parseTransactionsForSource', () => {
     const c = tx.find((t) => t.kind === 'CARD_CREDIT')
     expect(c).toBeDefined()
     expect(c!.amount).toBe(750.25)
+  })
+
+  it('extracts UOB card retail line as CARD_PURCHASE (TKT-028)', () => {
+    const tx = parseTransactionsForSource(UOB_CARD_RETAIL, 'UOB_CARD', 'imp-6')
+    const p = tx.find((t) => t.kind === 'CARD_PURCHASE')
+    expect(p).toBeDefined()
+    expect(p!.amount).toBe(42.5)
+    expect(p!.date).toBe('2024-06-01')
+    expect(p!.description).toBe('COLD STORAGE SINGAPORE')
+    expect(p!.spendImpact).toBe('SPEND')
+    expect(p!.reconciliationState).toBe('AutoMatched')
+  })
+
+  it('extracts UOB card PDF grid: CARD_CREDIT, CARD_PURCHASE, FX→SGD', () => {
+    const tx = parseTransactionsForSource(UOB_CARD_GRID, 'UOB_CARD', 'imp-grid')
+    const credit = tx.find((t) => t.kind === 'CARD_CREDIT')
+    expect(credit).toBeDefined()
+    expect(credit!.amount).toBe(1089.27)
+    expect(credit!.date).toBe('2026-02-28')
+    const purchases = tx.filter((t) => t.kind === 'CARD_PURCHASE')
+    expect(purchases).toHaveLength(2)
+    expect(purchases.map((p) => p.amount).sort((a, b) => a - b)).toEqual([30.74, 718])
+    const parkway = purchases.find((p) => p.description.includes('PARKWAY'))
+    expect(parkway?.date).toBe('2026-02-21')
+    expect(parkway?.reference).toBe('R123')
+    const fx = purchases.find((p) => p.description.includes('HO HUNG'))
+    expect(fx?.amount).toBe(30.74)
+    expect(fx?.date).toBe('2026-02-27')
+  })
+
+  it('extracts DBS card retail line as CARD_PURCHASE (TKT-028)', () => {
+    const tx = parseTransactionsForSource(DBS_CARD_RETAIL, 'DBS_CARD', 'imp-7')
+    const p = tx.find((t) => t.kind === 'CARD_PURCHASE')
+    expect(p).toBeDefined()
+    expect(p!.amount).toBe(18.9)
+    expect(p!.date).toBe('2024-05-20')
+    expect(p!.description).toBe('FAIRPRICE FINEST ORCHARD')
+  })
+
+  it('extracts DBS card PDF grid: purchases + multi-line desc + bill CR', () => {
+    const tx = parseTransactionsForSource(DBS_CARD_GRID, 'DBS_CARD', 'imp-dbs-grid')
+    const purchases = tx.filter((t) => t.kind === 'CARD_PURCHASE')
+    expect(purchases.map((p) => p.amount).sort((a, b) => a - b)).toEqual([292.87, 319.48])
+    const trip = purchases.find((p) => p.description.includes('TRIP'))
+    expect(trip?.date).toBe('2026-02-18')
+    const agoda = purchases.find((p) => p.description.includes('AGODA'))
+    expect(agoda?.description).toMatch(/INTERNET/)
+    expect(agoda?.description).toMatch(/HKG/)
+    const credit = tx.find((t) => t.kind === 'CARD_CREDIT')
+    expect(credit).toBeDefined()
+    expect(credit!.amount).toBe(419.13)
+    expect(credit!.date).toBe('2026-02-28')
+    expect(credit!.reference).toBe('17722779338197485631')
   })
 })

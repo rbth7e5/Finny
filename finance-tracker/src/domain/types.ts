@@ -19,7 +19,7 @@ export type ImportRecord = {
   contentHash?: string
 }
 
-export type TransactionKind = 'BANK_SETTLEMENT' | 'CARD_CREDIT' | 'TRANSFER'
+export type TransactionKind = 'BANK_SETTLEMENT' | 'CARD_CREDIT' | 'CARD_PURCHASE' | 'TRANSFER'
 
 export type Transaction = {
   id: string

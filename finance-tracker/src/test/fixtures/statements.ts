@@ -32,12 +32,64 @@ PAYMT THRU E-BANK/HOMEB/CYBERB 500.00
 Ref No. : REFUOB1
 `.trim()
 
+/** Retail line: date on previous line, merchant + amount (TKT-028). */
+export const UOB_CARD_RETAIL = `
+2024-06-01
+COLD STORAGE SINGAPORE 42.50
+`.trim()
+
+/** UOB card PDF-style grid: post/trans "DD MMM", then merchant, optional Ref/FX, SGD amount. */
+export const UOB_CARD_GRID = `
+Credit Card(s) Statement
+Statement Date 12 MAR 2026
+28 FEB
+28 FEB
+PAYMT THRU E-BANK/HOMEB/CYBERB (EP37)
+1,089.27 CR
+21 FEB
+21 FEB
+PARKWAY SHENTON PTE LTD
+Ref No. : R123
+718.00
+27 FEB
+27 FEB
+HO HUNG KEE CATERING SERVI
+Ref No. : R456
+HKD 183.70
+30.74
+`.trim()
+
 export const DBS_CARD_BILL = `
 2024-04-01
 BILL PAYMENT - DBS INTERNET/WIRELESS
 line
 750.25
 REF NO: RDBS1
+`.trim()
+
+/** Retail line: date on previous line, merchant + amount (TKT-028). */
+export const DBS_CARD_RETAIL = `
+2024-05-20
+FAIRPRICE FINEST ORCHARD 18.90
+`.trim()
+
+/** DBS card PDF: DD MMM, multi-line description, amount; bill payment + CR (real layout). */
+export const DBS_CARD_GRID = `
+Credit Cards Statement of Account DBS
+STATEMENT DATE 15 Mar 2026
+18 FEB
+TRIP.COM
+319.48
+28 FEB
+BILL PAYMENT - DBS INTERNET/WIRELESS
+REF NO: 17722779338197485631
+419.13
+CR
+05 MAR
+AGODA.COM APA HOTEL
+INTERNET
+HKG
+292.87
 `.trim()
 
 export const UOB_CARD_HEADER = 'Credit Card(s) Statement UOB'

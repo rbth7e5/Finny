@@ -235,4 +235,23 @@ describe('reconcile (PRD §6 settlement / ENG §7.4)', () => {
     expect(reviewBanks).toHaveLength(1)
     expect(updated.find((t) => t.id === 'c1')!.linkedTransactionId).toBe(autoBanks[0]!.id)
   })
+
+  it('does not treat CARD_PURCHASE as settlement candidate (TKT-028)', () => {
+    const purchase: Transaction = {
+      id: 'p1',
+      importId: 'i',
+      sourceType: 'UOB_CARD',
+      kind: 'CARD_PURCHASE',
+      amount: 10,
+      date: '2024-01-01',
+      description: 'RETAIL',
+      reconciliationState: 'AutoMatched',
+      spendImpact: 'SPEND',
+    }
+    const b = bank({ id: 'b1', amount: 100, reference: 'R1' })
+    const c = card({ id: 'c1', amount: 100, reference: 'R1' })
+    const { updated } = reconcile([purchase, b, c], profile)
+    expect(updated.find((t) => t.id === 'p1')).toEqual(purchase)
+    expect(updated.find((t) => t.id === 'b1')!.linkedTransactionId).toBe('c1')
+  })
 })

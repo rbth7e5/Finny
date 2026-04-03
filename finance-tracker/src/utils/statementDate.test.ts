@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   calendarDaysBetween,
   datesWithinMatchWindow,
+  inferStatementYearFromText,
+  parseDdMmmWithYear,
   parseStatementDate,
   toIsoDateString,
 } from './statementDate'
@@ -28,6 +30,41 @@ describe('parseStatementDate', () => {
   it('returns null for empty or unrecognised text', () => {
     expect(parseStatementDate('')).toBeNull()
     expect(parseStatementDate('not a date')).toBeNull()
+  })
+})
+
+describe('parseDdMmmWithYear', () => {
+  it('parses bare DD MMM with supplied year (UTC)', () => {
+    const d = parseDdMmmWithYear('28 FEB', 2026)
+    expect(d).not.toBeNull()
+    expect(toIsoDateString(d!)).toBe('2026-02-28')
+  })
+
+  it('returns null without year context on line', () => {
+    expect(parseDdMmmWithYear('28 Feb 2026', 2026)).toBeNull()
+  })
+})
+
+describe('inferStatementYearFromText', () => {
+  it('reads year after DBS STATEMENT DATE', () => {
+    expect(inferStatementYearFromText('STATEMENT DATE\n15 Mar 2026')).toBe(2026)
+  })
+
+  it('reads year after Statement Date', () => {
+    expect(inferStatementYearFromText('Statement Date 12 MAR 2026')).toBe(2026)
+  })
+
+  it('reads end year from Period line', () => {
+    expect(inferStatementYearFromText('Period: 01 Feb 2026 to 28 Feb 2026')).toBe(2026)
+  })
+
+  it('reads year after STATEMENT PRINTED ON (DBS footer)', () => {
+    expect(inferStatementYearFromText('STATEMENT PRINTED ON 15 Mar 2026')).toBe(2026)
+  })
+
+  it('does not use DD Mon YYYY beyond the header prefix as fallback year', () => {
+    const junk = `${'a'.repeat(6000)}01 Feb 2033\n`
+    expect(inferStatementYearFromText(junk)).toBeUndefined()
   })
 })
 

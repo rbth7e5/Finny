@@ -69,6 +69,43 @@ export function parseStatementDate(raw: string): Date | null {
   return null
 }
 
+/**
+ * UOB card PDFs often use post/trans lines like "28 FEB" without a year.
+ * Pair with `inferStatementYearFromText` from the statement header.
+ */
+export function parseDdMmmWithYear(raw: string, year: number): Date | null {
+  const s = raw.trim()
+  const m = s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})$/i)
+  if (!m) return null
+  const day = Number(m[1])
+  const monKey = m[2].toLowerCase()
+  const monthIdx = MONTH_MAP[monKey] ?? MONTH_MAP[monKey.slice(0, 3)]
+  if (monthIdx === undefined || day < 1 || day > 31) return null
+  const dt = utcDate(year, monthIdx, day)
+  return dt.getUTCFullYear() === year && dt.getUTCMonth() === monthIdx && dt.getUTCDate() === day ? dt : null
+}
+
+/** Best-effort calendar year for bare `DD MMM` lines (UOB/DBS card PDFs). Order: DBS before UOB so both can appear in one blob. */
+export function inferStatementYearFromText(text: string): number | undefined {
+  const mDbs = text.match(/STATEMENT\s+DATE[\s\S]{0,220}?(\d{1,2}\s+[A-Za-z]{3,}\s+(\d{4}))/i)
+  if (mDbs) return Number(mDbs[2])
+  const m = text.match(/Statement\s+Date[\s\S]{0,220}?(\d{1,2}\s+[A-Za-z]{3,}\s+(\d{4}))/i)
+  if (m) return Number(m[2])
+  const m2 = text.match(
+    /Period:\s*\d{1,2}\s+\w+\s+\d{4}\s+to\s+\d{1,2}\s+\w+\s+(\d{4})/i,
+  )
+  if (m2) return Number(m2[1])
+  const mPrinted = text.match(
+    /STATEMENT\s+PRINTED\s+ON[\s\S]{0,120}?(\d{1,2}\s+[A-Za-z]{3,}\s+(\d{4}))/i,
+  )
+  if (mPrinted) return Number(mPrinted[2])
+  // Last resort: first DD Mon YYYY only in the header-ish prefix (avoid footnotes / terms later in the PDF).
+  const head = text.slice(0, 6000)
+  const m3 = head.match(/(\d{1,2}\s+[A-Za-z]{3,}\s+(\d{4}))\b/)
+  if (m3) return Number(m3[2])
+  return undefined
+}
+
 export function toIsoDateString(d: Date): string {
   const y = d.getUTCFullYear()
   const mo = String(d.getUTCMonth() + 1).padStart(2, '0')
